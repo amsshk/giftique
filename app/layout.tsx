@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +21,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <header style={{ padding: "20px" }}>
+          <Image
+            src="/logo.svg"
+            alt="Giftique Logo"
+            width={120}
+            height={120}
+          />
+        </header>
+
+        {children}
+      </body>
     </html>
   );
 }
