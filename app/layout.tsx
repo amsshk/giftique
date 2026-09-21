@@ -22,14 +22,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <header style={{ padding: "20px" }}>
-          <Image
-            src="/logo.svg"
-            alt="Giftique Logo"
-            width={120}
-            height={120}
-          />
-        </header>
+        <Image
+          src="/logo.svg"
+          alt="Giftique Logo"
+          width={120}
+          height={120}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            margin: 0,
+            padding: 0,
+            zIndex: 9999,
+          }}
+        />
 
         {children}
       </body>
