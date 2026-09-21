@@ -6,6 +6,12 @@ import { sites } from "./build/sites-vite-plugin";
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
+const localBindingConfig = {
+  main: "vinext/server/fetch-handler",
+  compatibility_flags: ["nodejs_compat"],
+  d1_databases: [],
+  r2_buckets: [],
+};
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
