@@ -1,20 +1,648 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
-import {ArrowRight,AtSign,ChevronDown,Mail,MapPin,Package,Phone,Plus,ShoppingBag,X} from "lucide-react";
-import {createSupabaseBrowserClient} from "../../lib/supabase";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  AtSign,
+  ChevronDown,
+  Mail,
+  MapPin,
+  Package,
+  Plus,
+  ShoppingBag,
+  X,
+} from "lucide-react";
+import { createSupabaseBrowserClient } from "../../lib/supabase";
 
-type Product={id:string;name:string;description:string|null;category:string;price:number;image_url:string|null};
-const money=(value:number)=>new Intl.NumberFormat("en-AE",{style:"currency",currency:"AED"}).format(value);
+type Product = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+  image_url: string | null;
+};
 
-export default function StorePage(){
- const[products,setProducts]=useState<Product[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(""),[category,setCategory]=useState("All pieces"),[bag,setBag]=useState<Product[]>([]),[bagOpen,setBagOpen]=useState(false),[checkoutOpen,setCheckoutOpen]=useState(false),[customerName,setCustomerName]=useState(""),[customerEmail,setCustomerEmail]=useState(""),[customerPhone,setCustomerPhone]=useState(""),[checkoutMessage,setCheckoutMessage]=useState(""),[placing,setPlacing]=useState(false);
- const[supabase]=useState(createSupabaseBrowserClient);
- useEffect(()=>{let active=true;async function load(){try{const{data,error:queryError}=await supabase.from("storefront_products").select("id,name,description,category,price,image_url").eq("active",true).order("created_at",{ascending:false});if(!active)return;if(queryError)throw queryError;setProducts((data||[]) as Product[])}catch{if(active)setError("The collection is being refreshed. Please contact the atelier for current availability.")}finally{if(active)setLoading(false)}}load();return()=>{active=false}},[supabase]);
- const categories=useMemo(()=>["All pieces",...Array.from(new Set(products.map(product=>product.category).filter(Boolean)))],[products]);
- const visible=category==="All pieces"?products:products.filter(product=>product.category===category);
- const addToBag=(product:Product)=>{setBag(current=>[...current,product]);setBagOpen(true)};
- const removeFromBag=(index:number)=>setBag(current=>current.filter((_,itemIndex)=>itemIndex!==index));
- async function checkout(event:React.FormEvent<HTMLFormElement>){event.preventDefault();setPlacing(true);setCheckoutMessage("");const items=bag.map(product=>({product_id:product.id,quantity:1}));const{data,error:orderError}=await supabase.rpc("place_public_order",{p_items:items,p_customer_name:customerName,p_customer_email:customerEmail,p_customer_phone:customerPhone});setPlacing(false);if(orderError){setCheckoutMessage(orderError.message);return}setBag([]);setCheckoutOpen(false);setBagOpen(false);setCheckoutMessage(`Order ${data.reference} received. We will contact you shortly.`);setCustomerName("");setCustomerEmail("");setCustomerPhone("")}
- return <main className="atelier-store"><header className="atelier-nav"><a href="#top" className="atelier-logo"><span>G</span><div><strong>GIFTIQUE</strong><small>ATELIER</small></div></a><nav><a href="#edit">The edit</a><a href="#story">Our feeling</a><a href="#contact">Concierge</a><button className="atelier-bag" onClick={()=>setBagOpen(true)}><ShoppingBag size={18}/><b>{bag.length}</b></button></nav></header><section className="atelier-hero" id="top"><div className="hero-overline"><span>GIFTIQUE ATELIER</span><i>EST. UAE</i></div><div className="hero-main"><div><p className="hero-kicker">A collection for the beautifully considered moment</p><h1>Give them<br/><em>something</em><br/>to remember.</h1><p className="hero-copy">Objects, details, and little rituals for brides, best friends, and every celebration worth holding onto.</p><a className="hero-link" href="#edit">Enter the edit <ArrowRight size={16}/></a></div><div className="hero-art"><div className="hero-stamp">THE<br/>MEMORY<br/>EDIT</div><div className="hero-card"><span>01</span><strong>A gift<br/>with a<br/>point of view.</strong><small>Selected for the feeling it leaves behind.</small></div></div></div><div className="hero-bottom"><span>BRIDAL</span><span>KEEPSAKES</span><span>THE LITTLE DETAILS</span><span>UAE · GCC · WORLDWIDE</span></div></section><section className="atelier-manifest" id="story"><div className="manifest-label">WHY GIFTIQUE</div><div><h2>Not just a gift.<br/><em>A chapter in their story.</em></h2><p>We collect the pieces that turn a box into a memory. A note that gets kept. A ribbon that appears in a photograph. A small, certain reminder that someone thought of everything.</p></div></section><section className="atelier-edit" id="edit"><div className="edit-head"><div><span>THE CURRENT EDIT</span><h2>Choose your feeling.</h2></div><button className="category-select" onClick={()=>setCategory(categories[(categories.indexOf(category)+1)%categories.length])}>{category}<ChevronDown size={15}/></button></div><div className="category-row">{categories.map(item=><button className={category===item?"selected":""} key={item} onClick={()=>setCategory(item)}>{item}</button>)}</div>{loading?<p className="atelier-empty">Preparing the edit…</p>:error?<p className="atelier-empty">{error}</p>:!visible.length?<p className="atelier-empty">The edit is being prepared.</p>:<div className="atelier-grid">{visible.map((product,index)=><article className={`atelier-product product-${index%4}`} key={product.id}>{product.image_url?<img src={product.image_url} alt={product.name}/>:<div className="atelier-product-art"><Package size={25}/><span>GIFT<br/>DETAIL</span></div>}<div className="product-copy"><small>{product.category}</small><h3>{product.name}</h3>{product.description&&<p>{product.description}</p>}<div className="product-foot"><strong>{money(product.price)}</strong><button onClick={()=>addToBag(product)} aria-label={`Add ${product.name} to bag`}><Plus size={17}/></button></div></div></article>)}</div>}</section><section className="atelier-concierge" id="contact"><div className="concierge-mark">G</div><div><span>THE CONCIERGE DESK</span><h2>Have a moment<br/>in mind?</h2><p>Tell us who you are celebrating and we will help you find the piece that feels just right.</p><div className="concierge-links"><a href="mailto:hello@giftiqueatelier.com"><Mail size={16}/>hello@giftiqueatelier.com</a><a href="https://www.instagram.com/giftiqueatelier/" target="_blank" rel="noreferrer"><AtSign size={16}/>giftiqueatelier</a><span><MapPin size={16}/>United Arab Emirates</span></div></div><div className="concierge-note">“The best gifts<br/>feel like<br/>a secret<br/>between two<br/>people.”</div></section><footer className="atelier-footer"><strong>GIFTIQUE ATELIER</strong><span>Made for the moment after they open it.</span><a href="./">Team access</a></footer>{bagOpen&&<div className="bag-overlay" onClick={event=>event.target===event.currentTarget&&setBagOpen(false)}><aside className="bag-drawer"><div className="bag-head"><div><small>YOUR EDIT</small><h2>The gift bag</h2></div><button onClick={()=>setBagOpen(false)} aria-label="Close bag"><X size={19}/></button></div>{!bag.length?<div className="bag-empty"><ShoppingBag size={28}/><p>Your edit is waiting<br/>for its first piece.</p></div>:<>{bag.map((product,index)=><div className="bag-item" key={`${product.id}-${index}`}>{product.image_url?<img src={product.image_url} alt=""/>:<div/>}<span><small>{product.category}</small><b>{product.name}</b><strong>{money(product.price)}</strong></span><button onClick={()=>removeFromBag(index)} aria-label="Remove item"><X size={14}/></button></div>)}<div className="bag-total"><span>Estimated total</span><strong>{money(bag.reduce((sum,product)=>sum+product.price,0))}</strong></div><button className="bag-order" onClick={()=>{setBagOpen(false);setCheckoutOpen(true)}}>Checkout <ArrowRight size={16}/></button></>}</aside></div>}{checkoutOpen&&<div className="bag-overlay"><form className="checkout-card" onSubmit={checkout}><button className="checkout-close" type="button" onClick={()=>setCheckoutOpen(false)} aria-label="Close checkout"><X size={18}/></button><small>CHECKOUT</small><h2>Tell us where to begin.</h2><p>No account needed. Leave your details and the atelier will confirm your order.</p><label>Name<input required value={customerName} onChange={event=>setCustomerName(event.target.value)} placeholder="Your name"/></label><label>Email<input required type="email" value={customerEmail} onChange={event=>setCustomerEmail(event.target.value)} placeholder="you@example.com"/></label><label>Phone or WhatsApp<input value={customerPhone} onChange={event=>setCustomerPhone(event.target.value)} placeholder="Your number"/></label><button className="bag-order" type="submit">{placing?"Sending order…":"Place order"}</button>{checkoutMessage&&<p className="checkout-message">{checkoutMessage}</p>}</form></div>}</main>;
+const money = (value: number) =>
+  new Intl.NumberFormat("en-AE", {
+    style: "currency",
+    currency: "AED",
+  }).format(value);
+
+export default function StorePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [category, setCategory] = useState("All pieces");
+  const [bag, setBag] = useState<Product[]>([]);
+  const [bagOpen, setBagOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [placing, setPlacing] = useState(false);
+
+  const [supabase] = useState(createSupabaseBrowserClient);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      try {
+        const { data, error: queryError } = await supabase
+          .from("storefront_products")
+          .select(
+            "id,name,description,category,price,image_url"
+          )
+          .eq("active", true)
+          .order("created_at", { ascending: false });
+
+        if (!active) return;
+        if (queryError) throw queryError;
+
+        setProducts((data || []) as Product[]);
+      } catch {
+        if (active) {
+          setError(
+            "The collection is being refreshed. Please contact the atelier for current availability."
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  const categories = useMemo(
+    () => [
+      "All pieces",
+      ...Array.from(
+        new Set(
+          products
+            .map((product) => product.category)
+            .filter(Boolean)
+        )
+      ),
+    ],
+    [products]
+  );
+
+  const visible =
+    category === "All pieces"
+      ? products
+      : products.filter((product) => product.category === category);
+
+  const addToBag = (product: Product) => {
+    setBag((current) => [...current, product]);
+    setBagOpen(true);
+  };
+
+  const removeFromBag = (index: number) => {
+    setBag((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
+
+  async function checkout(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setPlacing(true);
+    setCheckoutMessage("");
+
+    const items = bag.map((product) => ({
+      product_id: product.id,
+      quantity: 1,
+    }));
+
+    const { data, error: orderError } = await supabase.rpc(
+      "place_public_order",
+      {
+        p_items: items,
+        p_customer_name: customerName,
+        p_customer_email: customerEmail,
+        p_customer_phone: customerPhone,
+      }
+    );
+
+    setPlacing(false);
+
+    if (orderError) {
+      setCheckoutMessage(orderError.message);
+      return;
+    }
+
+    setBag([]);
+    setCheckoutOpen(false);
+    setBagOpen(false);
+
+    setCheckoutMessage(
+      `Order ${data.reference} received. We will contact you shortly.`
+    );
+
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+  }
+
+  return (
+    <main className="gq-store">
+      {/* HEADER */}
+      <header className="gq-header">
+        <a href="#top" className="gq-brand" aria-label="Giftique Atelier">
+          <span className="gq-brand-mark">G</span>
+
+          <span className="gq-brand-name">
+            <strong>GIFTIQUE</strong>
+            <small>ATELIER</small>
+          </span>
+        </a>
+
+        <nav className="gq-navigation" aria-label="Main navigation">
+          <a href="#collection">Collection</a>
+          <a href="#story">The story</a>
+          <a href="#concierge">Concierge</a>
+        </nav>
+
+        <button
+          className="gq-bag-button"
+          onClick={() => setBagOpen(true)}
+          aria-label={`Open gift bag, ${bag.length} items`}
+        >
+          <span>Bag</span>
+          <ShoppingBag size={17} strokeWidth={1.5} />
+          <b>{String(bag.length).padStart(2, "0")}</b>
+        </button>
+      </header>
+
+      {/* HERO */}
+      <section className="gq-hero" id="top">
+        <div className="gq-hero-image" aria-hidden="true" />
+
+        <div className="gq-hero-index">01 / 04</div>
+
+        <div className="gq-hero-copy">
+          <p className="gq-eyebrow">
+            Giftique Atelier · United Arab Emirates
+          </p>
+
+          <h1>
+            Gifts
+            <br />
+            <em>worth</em>
+            <br />
+            remembering.
+          </h1>
+
+          <p className="gq-hero-description">
+            Thoughtfully chosen objects, details and keepsakes
+            for the moments that deserve more than an ordinary
+            gift.
+          </p>
+
+          <a href="#collection" className="gq-editorial-link">
+            Explore the collection
+            <ArrowRight size={15} strokeWidth={1.5} />
+          </a>
+        </div>
+
+        <div className="gq-hero-note">
+          <span>THE GIFT EDIT</span>
+          <strong>For the beautifully<br />considered moment.</strong>
+        </div>
+
+        <div className="gq-hero-meta">
+          <span>Bridal</span>
+          <span>Celebrations</span>
+          <span>Keepsakes</span>
+          <span>01—26</span>
+        </div>
+      </section>
+
+      {/* INTRO */}
+      <section className="gq-intro" id="story">
+        <div className="gq-section-number">02</div>
+
+        <div className="gq-intro-content">
+          <p className="gq-eyebrow">Why Giftique</p>
+
+          <h2>
+            A gift is
+            <br />
+            <em>part of the story.</em>
+          </h2>
+
+          <div className="gq-intro-text">
+            <p>
+              We believe the most memorable gifts are rarely
+              the biggest ones.
+            </p>
+
+            <p>
+              They are the little details that say someone
+              noticed. A beautifully wrapped surprise. An
+              object that becomes part of their everyday.
+              Something that stays long after the moment
+              itself.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* COLLECTION */}
+      <section className="gq-collection" id="collection">
+        <div className="gq-collection-header">
+          <div>
+            <p className="gq-eyebrow">The current edit</p>
+            <h2>Selected pieces.</h2>
+          </div>
+
+          <div className="gq-collection-count">
+            <span>{String(visible.length).padStart(2, "0")}</span>
+            <small>pieces</small>
+          </div>
+        </div>
+
+        <div className="gq-category-bar">
+          <div className="gq-category-list">
+            {categories.map((item) => (
+              <button
+                className={
+                  category === item ? "is-selected" : ""
+                }
+                key={item}
+                onClick={() => setCategory(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="gq-category-mobile"
+            onClick={() =>
+              setCategory(
+                categories[
+                  (categories.indexOf(category) + 1) %
+                    categories.length
+                ]
+              )
+            }
+          >
+            {category}
+            <ChevronDown size={14} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="gq-empty-state">
+            <span>Preparing the collection</span>
+          </div>
+        ) : error ? (
+          <div className="gq-empty-state">
+            <span>{error}</span>
+          </div>
+        ) : !visible.length ? (
+          <div className="gq-empty-state">
+            <span>The next edit is being prepared.</span>
+          </div>
+        ) : (
+          <div className="gq-product-grid">
+            {visible.map((product, index) => (
+              <article
+                className={`gq-product gq-product-${index % 4}`}
+                key={product.id}
+              >
+                <div className="gq-product-image">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      loading={index > 1 ? "lazy" : "eager"}
+                    />
+                  ) : (
+                    <div className="gq-product-placeholder">
+                      <Package
+                        size={25}
+                        strokeWidth={1}
+                      />
+                      <span>
+                        GIFT
+                        <br />
+                        DETAIL
+                      </span>
+                    </div>
+                  )}
+
+                  <span className="gq-product-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <button
+                    className="gq-add-overlay"
+                    onClick={() => addToBag(product)}
+                    aria-label={`Add ${product.name} to bag`}
+                  >
+                    <Plus size={18} strokeWidth={1.3} />
+                  </button>
+                </div>
+
+                <div className="gq-product-info">
+                  <div>
+                    <span className="gq-product-category">
+                      {product.category}
+                    </span>
+
+                    <h3>{product.name}</h3>
+                  </div>
+
+                  <strong>{money(product.price)}</strong>
+
+                  {product.description && (
+                    <p>{product.description}</p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CONCIERGE */}
+      <section className="gq-concierge" id="concierge">
+        <div className="gq-concierge-top">
+          <span>03 / 04</span>
+          <span>The concierge desk</span>
+        </div>
+
+        <div className="gq-concierge-main">
+          <div className="gq-concierge-title">
+            <p className="gq-eyebrow">A little help choosing</p>
+
+            <h2>
+              Have a
+              <br />
+              moment
+              <br />
+              <em>in mind?</em>
+            </h2>
+          </div>
+
+          <div className="gq-concierge-copy">
+            <p>
+              Tell us who you are celebrating, what the
+              occasion feels like, and we will help you find
+              something that feels just right.
+            </p>
+
+            <div className="gq-contact-list">
+              <a href="mailto:hello@giftiqueatelier.com">
+                <Mail size={15} strokeWidth={1.5} />
+                hello@giftiqueatelier.com
+              </a>
+
+              <a
+                href="https://www.instagram.com/giftiqueatelier/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <AtSign size={15} strokeWidth={1.5} />
+                giftiqueatelier
+              </a>
+
+              <span>
+                <MapPin size={15} strokeWidth={1.5} />
+                United Arab Emirates
+              </span>
+            </div>
+          </div>
+
+          <div className="gq-concierge-statement">
+            The detail
+            <br />
+            they remember
+            <br />
+            is often
+            <br />
+            the smallest.
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="gq-footer">
+        <div>
+          <strong>GIFTIQUE</strong>
+          <span>ATELIER</span>
+        </div>
+
+        <p>Made for the moment after they open it.</p>
+
+        <a href="./">Team access</a>
+
+        <span className="gq-footer-index">04 / 04</span>
+      </footer>
+
+      {/* BAG */}
+      {bagOpen && (
+        <div
+          className="gq-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setBagOpen(false);
+            }
+          }}
+        >
+          <aside className="gq-bag">
+            <div className="gq-bag-header">
+              <div>
+                <span className="gq-eyebrow">Your selection</span>
+                <h2>The gift bag</h2>
+              </div>
+
+              <button
+                onClick={() => setBagOpen(false)}
+                aria-label="Close gift bag"
+              >
+                <X size={19} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {!bag.length ? (
+              <div className="gq-bag-empty">
+                <ShoppingBag
+                  size={28}
+                  strokeWidth={1}
+                />
+                <p>
+                  Your bag is waiting
+                  <br />
+                  for its first piece.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="gq-bag-items">
+                  {bag.map((product, index) => (
+                    <div
+                      className="gq-bag-item"
+                      key={`${product.id}-${index}`}
+                    >
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt=""
+                        />
+                      ) : (
+                        <div className="gq-bag-placeholder" />
+                      )}
+
+                      <div>
+                        <span>{product.category}</span>
+                        <strong>{product.name}</strong>
+                        <small>{money(product.price)}</small>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          removeFromBag(index)
+                        }
+                        aria-label={`Remove ${product.name}`}
+                      >
+                        <X
+                          size={14}
+                          strokeWidth={1.5}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="gq-bag-total">
+                  <span>Estimated total</span>
+                  <strong>
+                    {money(
+                      bag.reduce(
+                        (sum, product) =>
+                          sum + product.price,
+                        0
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <button
+                  className="gq-checkout-button"
+                  onClick={() => {
+                    setBagOpen(false);
+                    setCheckoutOpen(true);
+                  }}
+                >
+                  Continue to checkout
+                  <ArrowRight
+                    size={15}
+                    strokeWidth={1.5}
+                  />
+                </button>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
+
+      {/* CHECKOUT */}
+      {checkoutOpen && (
+        <div className="gq-overlay">
+          <form
+            className="gq-checkout"
+            onSubmit={checkout}
+          >
+            <button
+              className="gq-checkout-close"
+              type="button"
+              onClick={() => setCheckoutOpen(false)}
+              aria-label="Close checkout"
+            >
+              <X size={18} strokeWidth={1.5} />
+            </button>
+
+            <span className="gq-eyebrow">Checkout</span>
+
+            <h2>
+              Tell us
+              <br />
+              where to begin.
+            </h2>
+
+            <p>
+              No account needed. Leave your details and the
+              atelier will confirm your order personally.
+            </p>
+
+            <label>
+              Name
+              <input
+                required
+                value={customerName}
+                onChange={(event) =>
+                  setCustomerName(event.target.value)
+                }
+                placeholder="Your name"
+              />
+            </label>
+
+            <label>
+              Email
+              <input
+                required
+                type="email"
+                value={customerEmail}
+                onChange={(event) =>
+                  setCustomerEmail(event.target.value)
+                }
+                placeholder="you@example.com"
+              />
+            </label>
+
+            <label>
+              Phone or WhatsApp
+              <input
+                value={customerPhone}
+                onChange={(event) =>
+                  setCustomerPhone(event.target.value)
+                }
+                placeholder="Your number"
+              />
+            </label>
+
+            <button
+              className="gq-checkout-submit"
+              type="submit"
+              disabled={placing}
+            >
+              {placing
+                ? "Sending order…"
+                : "Place order"}
+              <ArrowRight
+                size={15}
+                strokeWidth={1.5}
+              />
+            </button>
+
+            {checkoutMessage && (
+              <p className="gq-checkout-message">
+                {checkoutMessage}
+              </p>
+            )}
+          </form>
+        </div>
+      )}
+    </main>
+  );
 }

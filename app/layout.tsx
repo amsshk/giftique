@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Giftique Ledger",
-  description: "Accounting and profit management for Giftique Atelier.",
+  title: "Giftique Atelier",
+  description:
+    "Thoughtfully selected gifts and keepsakes from Giftique Atelier.",
   other: {
     "codex-preview": "development",
   },
@@ -21,24 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <Image
-          src="/logo.svg"
-          alt="Giftique Logo"
-          width={120}
-          height={120}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            margin: 0,
-            padding: 0,
-            zIndex: 9999,
-          }}
-        />
-
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
