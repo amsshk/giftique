@@ -1,5 +1,6 @@
 create table if not exists public.storefront_products (
   id uuid primary key default gen_random_uuid(),
+  source_handle text unique,
   name text not null,
   description text,
   category text not null default 'Gifts',
