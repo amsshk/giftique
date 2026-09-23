@@ -20,5 +20,5 @@ using (active = true);
 create policy "authenticated staff can manage storefront products"
 on public.storefront_products for all
 to authenticated
-using ((auth.jwt() -> 'user_metadata' ->> 'role') in ('owner', 'staff'))
-with check ((auth.jwt() -> 'user_metadata' ->> 'role') in ('owner', 'staff'));
+using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'))
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));

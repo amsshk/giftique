@@ -104,14 +104,14 @@ alter table public.order_items enable row level security;
 alter table public.stock_movements enable row level security;
 alter table public.delivery_shipments enable row level security;
 
-create policy "authenticated users can manage suppliers" on public.suppliers for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage inventory" on public.inventory_items for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage price history" on public.inventory_price_history for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage customers" on public.customers for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage orders" on public.orders for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage order items" on public.order_items for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage stock movements" on public.stock_movements for all to authenticated using (true) with check (true);
-create policy "authenticated users can manage shipments" on public.delivery_shipments for all to authenticated using (true) with check (true);
+create policy "owner and staff can manage suppliers" on public.suppliers for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage inventory" on public.inventory_items for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage price history" on public.inventory_price_history for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage customers" on public.customers for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage orders" on public.orders for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage order items" on public.order_items for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage stock movements" on public.stock_movements for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
+create policy "owner and staff can manage shipments" on public.delivery_shipments for all to authenticated using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff')) with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('owner', 'staff'));
 
 insert into public.suppliers (name) values ('Bookshop') on conflict (name) do nothing;
 
