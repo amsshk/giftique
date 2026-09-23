@@ -7,9 +7,9 @@ import {createSupabaseBrowserClient} from "../lib/supabase";
 
 export default function AuthGate({children}:{children:React.ReactNode}){
  const[session,setSession]=useState<Session|null>(null),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true);
- const[supabase]=useState(createSupabaseBrowserClient);
- useEffect(()=>{let active=true;supabase.auth.getSession().then(({data})=>{if(active){setSession(data.session);setLoading(false)}});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>{active=false;subscription.unsubscribe()}},[supabase]);
- async function signIn(event:FormEvent<HTMLFormElement>){event.preventDefault();setLoading(true);setError("");const{data,error:signInError}=await supabase.auth.signInWithPassword({email,password});if(signInError){setError(signInError.message);setLoading(false);return}setSession(data.session);setLoading(false)}
+ const[supabase]=useState(()=>{try{return createSupabaseBrowserClient()}catch{return null}});
+ useEffect(()=>{if(!supabase){setError("Supabase is not configured for this deployment.");setLoading(false);return}let active=true;supabase.auth.getSession().then(({data})=>{if(active){setSession(data.session);setLoading(false)}});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>{active=false;subscription.unsubscribe()}},[supabase]);
+ async function signIn(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!supabase)return;setLoading(true);setError("");const{data,error:signInError}=await supabase.auth.signInWithPassword({email,password});if(signInError){setError(signInError.message);setLoading(false);return}setSession(data.session);setLoading(false)}
  const role=session?.user.app_metadata?.role;
  if(session)return role==="client"?<ClientStorefront/>:role==="owner"||role==="staff"?<>{children}</>:<main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Access not assigned</h1><p>Your account is authenticated, but an owner must assign an owner, staff, or client role before you can continue.</p></div></main>;
  if(loading)return <main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><p>GIFTIQUE ATELIER</p><h1>Loading your workspace</h1></div></main>;
