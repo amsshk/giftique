@@ -1,7 +1,7 @@
 "use client";
 
 import {FormEvent,useEffect,useState} from "react";
-import {ArrowRight,LockKeyhole,LogIn,Package,ShoppingBag} from "lucide-react";
+import {ArrowRight,LockKeyhole,LogIn,LogOut,Package,ShoppingBag} from "lucide-react";
 import type {Session} from "@supabase/supabase-js";
 import {createSupabaseBrowserClient} from "../lib/supabase";
 
@@ -11,10 +11,12 @@ export default function AuthGate({children}:{children:React.ReactNode}){
  useEffect(()=>{if(!supabase){setError("Supabase is not configured for this deployment.");setLoading(false);return}let active=true;supabase.auth.getSession().then(({data})=>{if(active){setSession(data.session);setLoading(false)}});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>{active=false;subscription.unsubscribe()}},[supabase]);
  async function signIn(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!supabase)return;setLoading(true);setError("");const{data,error:signInError}=await supabase.auth.signInWithPassword({email,password});if(signInError){setError(signInError.message);setLoading(false);return}setSession(data.session);setLoading(false)}
  const role=session?.user.app_metadata?.role;
- if(session)return role==="client"?<ClientStorefront/>:role==="owner"||role==="staff"?<>{children}</>:<main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Access not assigned</h1><p>Your account is authenticated, but an owner must assign an owner, staff, or client role before you can continue.</p></div></main>;
+ if(session)return role==="client"?<ClientStorefront/>:role==="owner"||role==="staff"?<><SignOutButton/>{children}</>:<main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Access not assigned</h1><p>Your account is authenticated, but an owner must assign an owner, staff, or client role before you can continue.</p></div></main>;
  if(loading)return <main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><p>GIFTIQUE ATELIER</p><h1>Loading your workspace</h1></div></main>;
  return <main className="auth-page"><form className="auth-card" onSubmit={signIn}><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Sign in to Ledger</h1><p>Use your authorized team account to access orders, inventory, and delivery operations.</p>{error&&<div className="auth-error">{error}</div>}<label>Email address<input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="you@business.com"/></label><label>Password<input type="password" value={password} onChange={event=>setPassword(event.target.value)} required autoComplete="current-password" placeholder="Your password"/></label><button className="primary" type="submit"><LogIn size={17}/>{loading?"Signing in…":"Sign in"}</button><small><LockKeyhole size={14}/>Access is protected by Supabase authentication.</small></form></main>;
 }
+
+function SignOutButton(){const[supabase]=useState(createSupabaseBrowserClient);return <button className="global-signout" onClick={()=>supabase.auth.signOut()}><LogOut size={16}/>Sign out</button>}
 
 type StorefrontProduct={id:string;name:string;description:string|null;category:string;price:number;image_url:string|null};
 
@@ -26,7 +28,7 @@ function ClientStorefront(){
  async function placeOrder(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!selected)return;setPlacing(true);setOrderMessage("");const{data,error:orderError}=await supabase.rpc("place_storefront_order",{p_product_id:selected.id,p_quantity:quantity,p_customer_name:customerName,p_customer_email:customerEmail,p_customer_phone:customerPhone});setPlacing(false);if(orderError){setOrderMessage(orderError.message);return}setOrderMessage(`Order ${data.reference} received. The Giftique team will contact you shortly.`);setSelected(null);setQuantity(1);setCustomerName("");setCustomerEmail("");setCustomerPhone("")}
  const price=(value:number)=>new Intl.NumberFormat("en-AE",{style:"currency",currency:"AED"}).format(value);
  return <main className="storefront">
-  <header className="storefront-nav"><div className="storefront-brand"><span>G</span><strong>GIFTIQUE</strong></div><div className="storefront-nav-links"><a href="#shop">Shop</a><a href="#about">About Giftique</a><button aria-label="Shopping bag"><ShoppingBag size={18}/></button></div></header>
+    <header className="storefront-nav"><div className="storefront-brand"><span>G</span><strong>GIFTIQUE</strong></div><div className="storefront-nav-links"><a href="#shop">Shop</a><a href="#about">About Giftique</a><button aria-label="Shopping bag"><ShoppingBag size={18}/></button><button className="storefront-signout" onClick={()=>supabase.auth.signOut()}><LogOut size={16}/>Sign out</button></div></header>
   <section className="storefront-hero"><span>GIFTING, MADE PERSONAL</span><h1>Thoughtful pieces for your most meaningful moments.</h1><p>Explore Giftique Atelier's curated collection of gifts, keepsakes, and celebration details.</p><a href="#shop">Explore the collection <ArrowRight size={16}/></a></section>
   <section className="storefront-shop" id="shop"><div className="storefront-heading"><div><span>THE COLLECTION</span><h2>Find something worth remembering.</h2></div><Package size={24}/></div>
    {loading?<p className="storefront-empty">Loading the collection…</p>:error?<p className="storefront-empty">{error}</p>:!products.length?<p className="storefront-empty">The collection is being prepared. Please check back soon.</p>:<div className="storefront-grid">{products.map(product=><article className="storefront-product" key={product.id}>{product.image_url?<img src={product.image_url} alt=""/>:<div className="storefront-product-placeholder"><Package size={28}/></div>}<div><small>{product.category}</small><h3>{product.name}</h3>{product.description&&<p>{product.description}</p>}<strong>{price(product.price)}</strong><button className="storefront-order-button" onClick={()=>{setSelected(product);setOrderMessage("")}}>Choose product</button></div></article>)}</div>}
