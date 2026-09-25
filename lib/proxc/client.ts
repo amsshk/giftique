@@ -1,16 +1,14 @@
-const PROXC_URL = process.env.PROXC_URL;
-const PROXC_API_KEY = process.env.PROXC_API_KEY;
-const PROXC_API_SECRET = process.env.PROXC_API_SECRET;
-
-if (!PROXC_URL || !PROXC_API_KEY || !PROXC_API_SECRET) {
-  throw new Error("PROXC environment variables are not configured.");
-}
-
 export async function proxcRequest(
   method: string,
   path: string,
   body?: unknown
 ) {
+  const PROXC_URL = process.env.PROXC_URL;
+  const PROXC_API_KEY = process.env.PROXC_API_KEY;
+  const PROXC_API_SECRET = process.env.PROXC_API_SECRET;
+  if (!PROXC_URL || !PROXC_API_KEY || !PROXC_API_SECRET) {
+    throw new Error("PROXC environment variables are not configured.");
+  }
   const response = await fetch(`${PROXC_URL}${path}`, {
     method,
     headers: {
