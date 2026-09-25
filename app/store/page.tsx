@@ -21,6 +21,7 @@ type Product = {
   category: string;
   price: number;
   image_url: string | null;
+  erp_item_code: string | null;
 };
 
 const money = (value: number) =>
@@ -53,7 +54,7 @@ export default function StorePage() {
         const { data, error: queryError } = await supabase
           .from("storefront_products")
           .select(
-            "id,name,description,category,price,image_url"
+            "id,name,description,category,price,image_url,erp_item_code"
           )
           .eq("active", true)
           .order("created_at", { ascending: false });
@@ -116,35 +117,72 @@ export default function StorePage() {
     setPlacing(true);
     setCheckoutMessage("");
 
-    const items = bag.map((product) => ({
-      product_id: product.id,
-      quantity: 1,
-    }));
+    const grouped = new Map<string, number>();
 
-    const { data, error: orderError } = await supabase.rpc(
-      "place_public_order",
-      {
-        p_items: items,
-        p_customer_name: customerName,
-        p_customer_email: customerEmail,
-        p_customer_phone: customerPhone,
+    for (const product of bag) {
+      if (!product.erp_item_code) {
+        setPlacing(false);
+        setCheckoutMessage(
+          `The product "${product.name}" is not currently available for checkout.`
+        );
+        return;
       }
-    );
 
-    setPlacing(false);
-
-    if (orderError) {
-      setCheckoutMessage(orderError.message);
-      return;
+      grouped.set(
+        product.erp_item_code,
+        (grouped.get(product.erp_item_code) || 0) + 1
+      );
     }
 
-    setBag([]);
-    setCheckoutOpen(false);
-    setBagOpen(false);
-
-    setCheckoutMessage(
-      `Order ${data.reference} received. We will contact you shortly.`
+    const items = Array.from(grouped.entries()).map(
+      ([item_code, quantity]) => ({
+        item_code,
+        quantity,
+      })
     );
+
+    try {
+      const response = await fetch("/api/proxc-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          items,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data?.message?.ok) {
+        throw new Error(
+          data?.error ||
+            data?.message?.error ||
+            "Unable to create the order."
+        );
+      }
+
+      const order = data.message.order;
+
+      setBag([]);
+      setCheckoutOpen(false);
+      setBagOpen(false);
+
+      setCheckoutMessage(
+        `Order ${order.name} received. We will contact you shortly.`
+      );
+    } catch (error) {
+      setCheckoutMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to create the order."
+      );
+    } finally {
+      setPlacing(false);
+    }
 
     setCustomerName("");
     setCustomerEmail("");

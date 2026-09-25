@@ -13,19 +13,73 @@ export default function AuthGate({children}:{children:React.ReactNode}){
  const role=session?.user.app_metadata?.role;
  if(session)return role==="client"?<ClientStorefront/>:role==="owner"||role==="staff"?<><SignOutButton/>{children}</>:<main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Access not assigned</h1><p>Your account is authenticated, but an owner must assign an owner, staff, or client role before you can continue.</p></div></main>;
  if(loading)return <main className="auth-page"><div className="auth-card"><div className="auth-mark">G</div><p>GIFTIQUE ATELIER</p><h1>Loading your workspace</h1></div></main>;
- return <main className="auth-page"><form className="auth-card" onSubmit={signIn}><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Sign in to Ledger</h1><p>Use your authorized team account to access orders, inventory, and delivery operations.</p>{error&&<div className="auth-error">{error}</div>}<label>Email address<input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="you@business.com"/></label><label>Password<input type="password" value={password} onChange={event=>setPassword(event.target.value)} required autoComplete="current-password" placeholder="Your password"/></label><button className="primary" type="submit"><LogIn size={17}/>{loading?"Signing in…":"Sign in"}</button><small><LockKeyhole size={14}/>Access is protected by Supabase authentication.</small></form></main>;
+ return <main className="auth-page"><form className="auth-card" onSubmit={signIn}><div className="auth-mark">G</div><span>GIFTIQUE ATELIER</span><h1>Sign in to Giftique Management</h1><p>Use your authorized team account to access orders, inventory, accounting, and delivery operations.</p>{error&&<div className="auth-error">{error}</div>}<label>Email address<input type="email" value={email} onChange={event=>setEmail(event.target.value)} required autoComplete="email" placeholder="you@business.com"/></label><label>Password<input type="password" value={password} onChange={event=>setPassword(event.target.value)} required autoComplete="current-password" placeholder="Your password"/></label><button className="primary" type="submit"><LogIn size={17}/>{loading?"Signing in…":"Sign in"}</button><small><LockKeyhole size={14}/>Access is protected by Supabase authentication.</small></form></main>;
 }
 
 function SignOutButton(){const[supabase]=useState(createSupabaseBrowserClient);return <button className="global-signout" onClick={()=>supabase.auth.signOut()}><LogOut size={16}/>Sign out</button>}
 
-type StorefrontProduct={id:string;name:string;description:string|null;category:string;price:number;image_url:string|null};
+type StorefrontProduct={id:string;name:string;description:string|null;category:string;price:number;image_url:string|null;erp_item_code:string|null};
 
 function ClientStorefront(){
  const[products,setProducts]=useState<StorefrontProduct[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const[selected,setSelected]=useState<StorefrontProduct|null>(null),[quantity,setQuantity]=useState(1),[customerName,setCustomerName]=useState(""),[customerEmail,setCustomerEmail]=useState(""),[customerPhone,setCustomerPhone]=useState(""),[orderMessage,setOrderMessage]=useState(""),[placing,setPlacing]=useState(false);
  const[supabase]=useState(createSupabaseBrowserClient);
- useEffect(()=>{let active=true;supabase.from("storefront_products").select("id,name,description,category,price,image_url").eq("active",true).order("created_at",{ascending:false}).then(({data,error:queryError})=>{if(!active)return;if(queryError)setError("Products are being prepared.");else setProducts((data||[]) as StorefrontProduct[]);setLoading(false)});return()=>{active=false}},[supabase]);
- async function placeOrder(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!selected)return;setPlacing(true);setOrderMessage("");const{data,error:orderError}=await supabase.rpc("place_storefront_order",{p_product_id:selected.id,p_quantity:quantity,p_customer_name:customerName,p_customer_email:customerEmail,p_customer_phone:customerPhone});setPlacing(false);if(orderError){setOrderMessage(orderError.message);return}setOrderMessage(`Order ${data.reference} received. The Giftique team will contact you shortly.`);setSelected(null);setQuantity(1);setCustomerName("");setCustomerEmail("");setCustomerPhone("")}
+ useEffect(()=>{let active=true;supabase.from("storefront_products").select("id,name,description,category,price,image_url,erp_item_code").eq("active",true).order("created_at",{ascending:false}).then(({data,error:queryError})=>{if(!active)return;if(queryError)setError("Products are being prepared.");else setProducts((data||[]) as StorefrontProduct[]);setLoading(false)});return()=>{active=false}},[supabase]);
+ async function placeOrder(event:FormEvent<HTMLFormElement>){
+ event.preventDefault();
+ if(!selected)return;
+ if(!selected.erp_item_code){
+  setOrderMessage("This product is not currently available for checkout.");
+  return;
+ }
+ setPlacing(true);
+ setOrderMessage("");
+
+ try{
+  const response=await fetch("/api/proxc-order",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    customer_name:customerName,
+    customer_email:customerEmail,
+    customer_phone:customerPhone,
+    items:[{
+     item_code:selected.erp_item_code,
+     quantity
+    }]
+   })
+  });
+
+  const data=await response.json();
+
+  if(!response.ok || !data?.message?.ok){
+   throw new Error(
+    data?.error ||
+    data?.message?.error ||
+    "Unable to create the order."
+   );
+  }
+
+  const order=data.message.order;
+
+  setOrderMessage(
+   `Order ${order.name} received. The Giftique team will contact you shortly.`
+  );
+  setSelected(null);
+  setQuantity(1);
+  setCustomerName("");
+  setCustomerEmail("");
+  setCustomerPhone("");
+ }catch(error){
+  setOrderMessage(
+   error instanceof Error
+    ? error.message
+    : "Unable to create the order."
+  );
+ }finally{
+  setPlacing(false);
+ }
+}
  const price=(value:number)=>new Intl.NumberFormat("en-AE",{style:"currency",currency:"AED"}).format(value);
  return <main className="storefront">
     <header className="storefront-nav"><div className="storefront-brand"><span>G</span><strong>GIFTIQUE</strong></div><div className="storefront-nav-links"><a href="#shop">Shop</a><a href="#about">About Giftique</a><button aria-label="Shopping bag"><ShoppingBag size={18}/></button><button className="storefront-signout" onClick={()=>supabase.auth.signOut()}><LogOut size={16}/>Sign out</button></div></header>

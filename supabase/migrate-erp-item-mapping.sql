@@ -1,0 +1,57 @@
+alter table public.storefront_products
+add column if not exists erp_item_code text;
+
+create index if not exists storefront_products_erp_item_code_idx
+on public.storefront_products(erp_item_code);
+
+update public.storefront_products
+set erp_item_code = case name
+  when 'Acrlyic Engagement Board' then 'GFT-034'
+  when 'Beach bag' then 'GFT-045'
+  when 'Beach tote bag' then 'GFT-046'
+  when 'Bridal bow tie' then 'GFT-039'
+  when 'Bridal Gift Box' then 'GFT-011'
+  when 'Bridal shower lace Banner' then 'GFT-019'
+  when 'Bridal veils' then 'GFT-037'
+  when 'Bride bachelorette cruise set' then 'GFT-049'
+  when 'Bride Cards' then 'GFT-028'
+  when 'Bride pouch' then 'GFT-017'
+  when 'Bride pyjama' then 'GFT-003'
+  when 'Bride Slippers' then 'GFT-029'
+  when 'Bride to be pillowcase' then 'GFT-022'
+  when 'Bridesmaids, Maid OF Honor, Mothers and more proposal gift boxes' then 'GFT-018'
+  when 'Capri women 3 piece set' then 'GFT-048'
+  when 'Custom candle' then 'GFT-016'
+  when 'Custom Garment bag' then 'GFT-013'
+  when 'Custom Monogram Satin Dust Bag' then 'GFT-009'
+  when 'Door hanger' then 'GFT-025'
+  when 'Flower bouquet tie' then 'GFT-038'
+  when 'Gift Box Packaging' then 'GFT-015'
+  when 'Hanger dresser' then 'GFT-008'
+  when 'Happy tears handkerchief' then 'GFT-020'
+  when 'Keepsake' then 'GFT-033'
+  when 'Letters to the Bride Book' then 'GFT-006'
+  when 'Luggage tag' then 'GFT-010'
+  when 'Medkhan' then 'GFT-040'
+  when 'Men cotton terry swimwear and loungwear set' then 'GFT-050'
+  when 'Mon Amor Bridal Shower Kit' then 'GFT-001'
+  when 'Personalized Hangers' then 'GFT-032'
+  when 'Pool floaty' then 'GFT-012'
+  when 'Resort 2 piece set' then 'GFT-041'
+  when 'Satin coral dress' then 'GFT-042'
+  when 'Sentimental hand gloves' then 'GFT-036'
+  when 'Serenity dress' then 'GFT-044'
+  when 'Summer lilac dress' then 'GFT-043'
+  when 'The Elan Dress' then 'GFT-002'
+  when 'The Feather Robe' then 'GFT-031'
+  when 'The lace robe (chiffon)' then 'GFT-004'
+  when 'The Linen robe' then 'GFT-014'
+  when 'The Pearl Robe' then 'GFT-030'
+  when 'The Reve robe' then 'GFT-005'
+  when 'The Serendipity Robe' then 'GFT-026'
+  when 'The Silk Robe' then 'GFT-035'
+  when 'The UAE Bride Checklist' then 'GFT-007'
+  when 'Waffle makeup bag' then 'GFT-023'
+  when 'Women cotton terry swimwear and loungewear set' then 'GFT-047'
+  else null
+end;
