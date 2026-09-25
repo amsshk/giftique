@@ -24,6 +24,11 @@ type Product = {
   erp_item_code: string | null;
 };
 
+type ProxcOrderResponse = {
+  error?: string;
+  message?: { ok?: boolean; error?: string; order?: { name: string } };
+};
+
 const money = (value: number) =>
   new Intl.NumberFormat("en-AE", {
     style: "currency",
@@ -155,9 +160,9 @@ export default function StorePage() {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ProxcOrderResponse;
 
-      if (!response.ok || !data?.message?.ok) {
+      if (!response.ok || !data.message?.ok || !data.message.order?.name) {
         throw new Error(
           data?.error ||
             data?.message?.error ||
