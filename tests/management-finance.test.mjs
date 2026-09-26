@@ -11,7 +11,7 @@ const dir = mkdtempSync(join(tmpdir(), 'giftique-finance-test-'));
 const sources = {
   client: 'lib/proxc/client.ts', operations: 'lib/proxc/management-operations.ts',
   catalog: 'lib/management-catalog.ts', finance: 'lib/proxc/finance.ts', auth: 'lib/proxc/management-auth.ts',
-  business: 'app/api/proxc-management/business/route.ts', reports: 'app/api/proxc-management/reports/route.ts',
+  invoiceFiles: 'app/api/proxc-management/invoice-files/route.ts', business: 'app/api/proxc-management/business/route.ts', reports: 'app/api/proxc-management/reports/route.ts',
 };
 const replacements = { './client': 'client', './management-operations': 'operations', '../management-catalog': 'catalog', '@/lib/proxc/management-auth': 'auth', '@/lib/proxc/client': 'client', '@/lib/proxc/finance': 'finance', '@/lib/proxc/management-operations': 'operations' };
 for (const [key, source] of Object.entries(sources)) {
@@ -21,6 +21,7 @@ for (const [key, source] of Object.entries(sources)) {
 }
 const finance = await import(pathToFileURL(join(dir, 'finance.mjs')));
 const business = await import(pathToFileURL(join(dir, 'business.mjs')));
+const invoiceFiles = await import(pathToFileURL(join(dir, 'invoiceFiles.mjs')));
 const reports = await import(pathToFileURL(join(dir, 'reports.mjs')));
 after(() => rmSync(dir, { recursive: true, force: true }));
 process.env.PROXC_URL = 'https://proxc.test'; process.env.PROXC_API_KEY = 'local'; process.env.PROXC_API_SECRET = 'local';
@@ -67,4 +68,42 @@ test('reports route preserves expected response envelope',async()=>{
  mock('owner',()=>({message:{columns:[],result:[],report_summary:[]}}));
  const response=await reports.GET(request('/?report=profit_loss&from=2026-01-01&to=2026-09-26'));
  assert.equal(response.status,200); assert.equal((await response.json()).report.company,'Giftique');
+});
+
+
+test('invoice files require owner access before storage is reached', async () => {
+ for (const role of ['staff','client']) {
+  const calls=mock(role);
+  assert.equal((await invoiceFiles.GET(request('/?action=list_files'))).status,403);
+  assert.equal((await invoiceFiles.POST(request('/',{action:'upload',filename:'invoice.pdf',content:'JVBERi0='}))).status,403);
+  assert.equal(calls.length,0);
+ }
+ assert.equal((await invoiceFiles.GET(request('/?action=download&name=private',undefined,false))).status,401);
+});
+test('invoice upload validates file types, size, and actor before calling PROXC', async () => {
+ const calls=mock();
+ for (const body of [
+  {action:'upload',filename:'invoice.html',content:'abcd'},
+  {action:'upload',filename:'invoice.pdf',content:'%%%invalid'},
+  {action:'upload',filename:'invoice.pdf',content:'abcd',actor:'Administrator'},
+  {action:'link',name:'FILE',kind:'employees',invoice:'OTHER',expected_modified:'today'},
+ ]) assert.equal((await invoiceFiles.POST(request('/',body))).status,400);
+ assert.equal((await invoiceFiles.POST(request('/',{action:'upload',filename:'invoice.pdf',content:'A'.repeat(6700001)}))).status,413);
+ assert.equal(calls.length,0);
+ assert.equal((await invoiceFiles.POST(request('/',{action:'upload',filename:'invoice.pdf',content:'JVBERi0='}))).status,200);
+ assert.equal(calls[0].body.actor,'verified-user-id');
+ assert.match(calls[0].target.pathname,/giftique_invoice_files.upload$/);
+});
+test('invoice download is private, forced attachment, and strips unsafe filename characters', async () => {
+ mock('owner',()=>({message:{filename:'invoice"\r\n.pdf',content:Buffer.from('%PDF-synthetic').toString('base64')}}));
+ const response=await invoiceFiles.GET(request('/?action=download&name=FILE'));
+ assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store');
+ assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+ assert.equal(response.headers.get('content-disposition'),'attachment; filename="invoice___.pdf"');
+ assert.equal(await response.text(),'%PDF-synthetic');
+});
+test('invoice file errors never expose ERPNext tracebacks', async () => {
+ mock('owner',()=>{throw new Error('PROXC API 403: '+JSON.stringify({exc_type:'PermissionError',exception:'private details'}));});
+ const response=await invoiceFiles.GET(request('/?action=download&name=OTHER'));
+ assert.equal(response.status,403);assert.doesNotMatch(await response.text(),/private details/);
 });

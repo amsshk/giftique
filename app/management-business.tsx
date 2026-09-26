@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import InvoiceFiles from "./management-invoice-files";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { accountingReports, type AccountingReport, type AccountingReportId } from "@/lib/management-catalog";
 import type { BusinessForm, BusinessRecord, Capabilities, Field, Values } from "@/lib/business-types";
@@ -32,12 +33,13 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
   const load = useCallback(async () => { setError(""); try { setCaps(await api<Capabilities>({ action: "capabilities" })); } catch (e) { setError(e instanceof Error ? e.message : "Setup unavailable."); } }, [api]);
   useEffect(() => { let active = true; void supabase.auth.getSession().then(({ data }) => { if (active) setOwner(data.session?.user.app_metadata?.role === "owner"); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setOwner(session?.user.app_metadata?.role === "owner"); setCaps(null); setTab("Operations"); }); return () => { active = false; subscription.unsubscribe(); }; }, [supabase]);
   useEffect(() => { if (owner) { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); } }, [owner, load]);
-  const tabs = owner ? ["Operations", "Accounting", "Cash & Banks", "Credit & Bills", "Staff", "Payroll", "Company & Documents"] : ["Operations"];
+  const tabs = owner ? ["Operations", "Invoice files", "Accounting", "Cash & Banks", "Credit & Bills", "Staff", "Payroll", "Company & Documents"] : ["Operations"];
   return <>
     <nav aria-label="Management sections" className="mb-6 flex flex-wrap gap-2">{tabs.map(item => <button key={item} type="button" aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)} className={tab === item ? primary : button}>{item}</button>)}</nav>
     {tab === "Operations" ? children : <section className="rounded-2xl border border-[#e5dfd8] bg-white p-5 sm:p-7" aria-label={tab}>
       <h2 className="text-2xl font-semibold">{tab}</h2><p className="mb-6 mt-2 text-sm text-[#716b66]">Giftique · Owner access · Records saved in ERPNext</p>
       {error ? <><p role="alert" className="text-red-800">{error}</p><button className={button} onClick={() => void load()}>Retry connection</button></> : !caps ? <p role="status">Loading business setup…</p> : <>
+        {tab === "Invoice files" && <InvoiceFiles supabase={supabase} />}
         {tab === "Accounting" && <><Reports supabase={supabase} /><RecordArea api={api} caps={caps} kinds={["journals", "accounts"]} /></>}
         {tab === "Cash & Banks" && <><Payments api={api} /><RecordArea api={api} caps={caps} kinds={["payments", "bank_accounts", "banks"]} /></>}
         {tab === "Credit & Bills" && <><p className="mb-4 text-sm">Track supplier bills and customer credit notes. Receivables and payables ageing are available in Accounting.</p><CreditNote api={api} /><RecordArea api={api} caps={caps} kinds={["purchase_invoices", "suppliers", "customers"]} /></>}
