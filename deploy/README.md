@@ -9,6 +9,7 @@ Create `.env.production` in the repository root on Oracle (do not commit it):
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLIC_KEY
+NEXT_PUBLIC_PROXC_DESK_URL=https://YOUR_ERP_HOSTNAME
 PROXC_URL=http://host.docker.internal:8080
 PROXC_API_KEY=YOUR_API_KEY
 PROXC_API_SECRET=YOUR_API_SECRET
