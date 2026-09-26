@@ -34,16 +34,16 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <meta http-equiv="refresh" content="0; url=http://84.235.254.131:8080/desk">
+            <meta http-equiv="refresh" content="0; url=https://giftiqueatelier.duckdns.org/desk">
             <title>PROXC powered by ezdevsoft.net</title>
             <script>
-              window.location.replace("http://84.235.254.131:8080/desk");
+              window.location.replace("https://giftiqueatelier.duckdns.org/desk");
             </script>
           </head>
           <body>
             <h1>PROXC</h1>
             <p>powered by ezdevsoft.net</p>
-            <p><a href="http://84.235.254.131:8080/desk">Open PROXC Desk</a></p>
+            <p><a href="https://giftiqueatelier.duckdns.org/desk">Open PROXC Desk</a></p>
           </body>
           </html>
           HTML
