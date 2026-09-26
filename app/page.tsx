@@ -1,20 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, ClipboardList, FileText, Package, RefreshCw, Truck, Users } from "lucide-react";
+import { ClipboardList, FileText, Package, RefreshCw, Truck, Users } from "lucide-react";
 import AuthGate from "./auth-gate";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
-const deskUrl = (process.env.NEXT_PUBLIC_PROXC_DESK_URL || "").replace(/\/$/, "");
-
 const areas = [
-  { title: "Orders", description: "Customer orders and their progress.", icon: ClipboardList, path: "/app/sales-order" },
-  { title: "Customers", description: "Customer and contact details.", icon: Users, path: "/app/customer" },
-  { title: "Invoices", description: "Create and manage sales invoices.", icon: FileText, path: "/app/sales-invoice" },
-  { title: "Products", description: "Products, prices, and item details.", icon: Package, path: "/app/item" },
-  { title: "Stock", description: "Warehouse stock entries and movements.", icon: Package, path: "/app/stock-entry" },
-  { title: "Delivery", description: "Delivery notes and shipment progress.", icon: Truck, path: "/app/delivery-note" },
-] as const;
+  { title: "Orders", description: "Customer orders and their progress.", icon: ClipboardList },
+  { title: "Customers", description: "Customer and contact details.", icon: Users },
+  { title: "Invoices", description: "Sales invoices and payment status.", icon: FileText },
+  { title: "Products & stock", description: "Products, prices, and warehouse stock.", icon: Package },
+  { title: "Delivery", description: "Delivery notes and shipment progress.", icon: Truck },
+];
 
 type Overview = {
   company: string;
@@ -104,26 +101,18 @@ function ManagementHome() {
         <section className="mb-8 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm">
           <h2 className="text-xl font-semibold">Your Giftique management area</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#716b66]">
-            Review live business information below. Open an area to work with its ERPNext records using your authorized ERPNext account while more tools are connected through PROXC.
+            Review live business information from ERPNext below. More management tools will appear here as they are connected through PROXC.
           </p>
         </section>
 
         <LiveOverview />
 
         <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Giftique operations">
-          {areas.map(({ title, description, icon: Icon, path }) => deskUrl ? (
-            <a key={title} href={`${deskUrl}${path}`} target="_blank" rel="noopener noreferrer" className="group rounded-2xl border border-[#e5dfd8] bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1ece5]"><Icon size={21} /></div>
-              <h3 className="font-semibold">{title}</h3>
-              <p className="mt-2 text-sm leading-5 text-[#716b66]">{description}</p>
-              <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium">Open in ERPNext <ArrowUpRight size={15} /></span>
-            </a>
-          ) : (
+          {areas.map(({ title, description, icon: Icon }) => (
             <article key={title} className="rounded-2xl border border-[#e5dfd8] bg-white p-6 shadow-sm">
               <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1ece5]"><Icon size={21} /></div>
               <h3 className="font-semibold">{title}</h3>
               <p className="mt-2 text-sm leading-5 text-[#716b66]">{description}</p>
-              <p className="mt-5 text-sm text-[#716b66]">ERPNext link unavailable</p>
             </article>
           ))}
         </section>
