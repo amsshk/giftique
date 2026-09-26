@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import AuthGate from "./auth-gate";
+import ManagementWorkspace from "./management-business";
 import ManagementOperations, { type Area } from "./management-operations";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -99,7 +100,7 @@ function ManagementHome() {
           </p>
         </section>
 
-        <ManagementOperations onChanged={() => setRefreshKey(value => value + 1)} renderOverview={openArea => <LiveOverview refreshKey={refreshKey} onOpenArea={openArea} />} />
+        <ManagementWorkspace><ManagementOperations onChanged={() => setRefreshKey(value => value + 1)} renderOverview={openArea => <LiveOverview refreshKey={refreshKey} onOpenArea={openArea} />} /></ManagementWorkspace>
       </div>
     </main>
   );
