@@ -5,6 +5,8 @@ import {ArrowRight,LockKeyhole,LogIn,LogOut,Package,ShoppingBag} from "lucide-re
 import type {Session} from "@supabase/supabase-js";
 import {createSupabaseBrowserClient} from "../lib/supabase";
 
+import {presentStorefrontProduct} from "../lib/storefront-products";
+
 export default function AuthGate({children}:{children:React.ReactNode}){
  const[supabase]=useState(()=>{try{return createSupabaseBrowserClient()}catch{return null}});
  const[session,setSession]=useState<Session|null>(null),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(Boolean(supabase));
@@ -25,7 +27,7 @@ function ClientStorefront(){
  const[products,setProducts]=useState<StorefrontProduct[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("");
  const[selected,setSelected]=useState<StorefrontProduct|null>(null),[quantity,setQuantity]=useState(1),[customerName,setCustomerName]=useState(""),[customerEmail,setCustomerEmail]=useState(""),[customerPhone,setCustomerPhone]=useState(""),[orderMessage,setOrderMessage]=useState(""),[placing,setPlacing]=useState(false);
  const[supabase]=useState(createSupabaseBrowserClient);
- useEffect(()=>{let active=true;supabase.from("storefront_products").select("id,name,description,category,price,image_url,erp_item_code").eq("active",true).order("created_at",{ascending:false}).then(({data,error:queryError})=>{if(!active)return;if(queryError)setError("Products are being prepared.");else setProducts((data||[]) as StorefrontProduct[]);setLoading(false)});return()=>{active=false}},[supabase]);
+ useEffect(()=>{let active=true;supabase.from("storefront_products").select("id,name,description,category,price,image_url,erp_item_code").eq("active",true).order("created_at",{ascending:false}).then(({data,error:queryError})=>{if(!active)return;if(queryError)setError("Products are being prepared.");else setProducts(((data||[]) as StorefrontProduct[]).map(presentStorefrontProduct));setLoading(false)});return()=>{active=false}},[supabase]);
  async function placeOrder(event:FormEvent<HTMLFormElement>){
  event.preventDefault();
  if(!selected)return;

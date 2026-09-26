@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "../../lib/supabase";
 
+import { presentStorefrontProduct } from "../../lib/storefront-products";
+
 type Product = {
   id: string;
   name: string;
@@ -67,7 +69,7 @@ export default function StorePage() {
         if (!active) return;
         if (queryError) throw queryError;
 
-        setProducts((data || []) as Product[]);
+        setProducts(((data || []) as Product[]).map(presentStorefrontProduct));
       } catch {
         if (active) {
           setError(
