@@ -487,7 +487,7 @@ export default function StorePage() {
 
         <p>Made for the moment after they open it.</p>
 
-        <a href="./">Team access</a>
+        <a href="/management">Team access</a>
 
         <span className="gq-footer-index">04 / 04</span>
       </footer>
