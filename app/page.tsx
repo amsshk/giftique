@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import AuthGate from "./auth-gate";
-import ManagementOperations from "./management-operations";
+import ManagementOperations, { type Area } from "./management-operations";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 type Overview = {
@@ -17,7 +17,7 @@ type Overview = {
 
 const money = (amount: number) => new Intl.NumberFormat("en-AE", { style: "currency", currency: "AED" }).format(amount);
 
-function LiveOverview({ refreshKey }: { refreshKey: number }) {
+function LiveOverview({ refreshKey, onOpenArea }: { refreshKey: number; onOpenArea: (area: Area, draftOnly?: boolean) => void }) {
   const [supabase] = useState(createSupabaseBrowserClient);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState("");
@@ -59,10 +59,10 @@ function LiveOverview({ refreshKey }: { refreshKey: number }) {
       {overview ? <>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           {([
-            ["Sales orders", overview.counts.orders],
-            ["Draft orders", overview.counts.draft_orders],
-            ["Sales invoices", overview.counts.invoices],
-          ] as const).map(([label, value]) => <div key={label} className="rounded-xl bg-[#f7f5f2] p-4"><p className="text-sm text-[#716b66]">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div>)}
+            ["Sales orders", overview.counts.orders, "orders", false],
+            ["Draft orders", overview.counts.draft_orders, "orders", true],
+            ["Sales invoices", overview.counts.invoices, "invoices", false],
+          ] as const).map(([label, value, area, draftOnly]) => <button key={label} type="button" onClick={() => onOpenArea(area, draftOnly)} aria-controls="management-records" className="rounded-xl bg-[#f7f5f2] p-4 text-left transition hover:bg-[#eee9e3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6f47]"><span className="block text-sm text-[#716b66]">{label}</span><span className="mt-1 block text-2xl font-semibold">{value}</span><span className="mt-2 block text-xs font-medium text-[#8b6f47]">View records →</span></button>)}
         </div>
         <div className="mt-7 grid gap-7 lg:grid-cols-2">
           <div><h3 className="font-semibold">Recent orders</h3><div className="mt-3 divide-y divide-[#eee9e3]">
@@ -99,8 +99,7 @@ function ManagementHome() {
           </p>
         </section>
 
-        <LiveOverview refreshKey={refreshKey} />
-        <ManagementOperations onChanged={() => setRefreshKey(value => value + 1)} />
+        <ManagementOperations onChanged={() => setRefreshKey(value => value + 1)} renderOverview={openArea => <LiveOverview refreshKey={refreshKey} onOpenArea={openArea} />} />
       </div>
     </main>
   );

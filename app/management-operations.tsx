@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ClipboardList, FileText, Package, RefreshCw, Truck, Users } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
-type Area = "orders" | "invoices" | "customers" | "products" | "delivery";
+export type Area = "orders" | "invoices" | "customers" | "products" | "delivery";
 type Action = "submit_order" | "create_invoice" | "submit_invoice";
 type Item = { item_code: string; item_name: string; qty: number; rate: number; amount: number; sales_order?: string };
 type Order = { name: string; customer: string; customer_name: string; transaction_date: string; delivery_date: string; grand_total: number; status: string; docstatus: number; modified: string; items: Item[] };
@@ -23,9 +23,15 @@ const areas = [
 
 const money = (amount: number) => new Intl.NumberFormat("en-AE", { style: "currency", currency: "AED" }).format(amount);
 
-export default function ManagementOperations({ onChanged }: { onChanged: () => void }) {
+export default function ManagementOperations({ onChanged, renderOverview }: {
+  onChanged: () => void;
+  renderOverview: (openArea: (area: Area, draftOnly?: boolean) => void) => ReactNode;
+}) {
   const [supabase] = useState(createSupabaseBrowserClient);
   const [area, setArea] = useState<Area | null>(null);
+  const [draftOnly, setDraftOnly] = useState(false);
+  const [navigationCount, setNavigationCount] = useState(0);
+  const recordsRef = useRef<HTMLElement>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -40,6 +46,13 @@ export default function ManagementOperations({ onChanged }: { onChanged: () => v
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [confirmation, setConfirmation] = useState<{ action: Action; name: string; modified: string } | null>(null);
 
+  useEffect(() => {
+    const records = recordsRef.current;
+    if (!records) return;
+    records.focus({ preventScroll: true });
+    records.scrollIntoView({ behavior: "instant", block: "start" });
+  }, [navigationCount]);
+
   async function api(path: string, options?: RequestInit) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Sign in again to continue.");
@@ -53,8 +66,10 @@ export default function ManagementOperations({ onChanged }: { onChanged: () => v
     return data;
   }
 
-  async function loadArea(next: Area) {
+  async function loadArea(next: Area, onlyDrafts = false) {
     setArea(next);
+    setDraftOnly(next === "orders" && onlyDrafts);
+    setNavigationCount(value => value + 1);
     setSelectedOrder(null);
     setSelectedInvoice(null);
     setConfirmation(null);
@@ -62,7 +77,7 @@ export default function ManagementOperations({ onChanged }: { onChanged: () => v
     setLoading(true);
     try {
       if (next === "orders") {
-        const data = await api("/api/proxc-management/orders");
+        const data = await api(`/api/proxc-management/orders${onlyDrafts ? "?status=draft" : ""}`);
         setOrders(data.orders as Order[]);
       } else if (next === "invoices") {
         const data = await api("/api/proxc-management/invoices");
@@ -149,8 +164,9 @@ export default function ManagementOperations({ onChanged }: { onChanged: () => v
   }
 
   return <>
+    {renderOverview((next, onlyDrafts) => { setNotice(""); void loadArea(next, onlyDrafts); })}
     <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Giftique operations">
-      {areas.map(({ id, title, description, icon: Icon }) => <button key={id} type="button" onClick={() => { setNotice(""); void loadArea(id); }} aria-pressed={area === id}
+      {areas.map(({ id, title, description, icon: Icon }) => <button key={id} type="button" onClick={() => { setNotice(""); void loadArea(id); }} aria-pressed={area === id} aria-controls="management-records"
         className={`rounded-2xl border bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${area === id ? "border-[#8b6f47]" : "border-[#e5dfd8]"}`}>
         <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1ece5]"><Icon size={21} /></span>
         <span className="block font-semibold">{title}</span>
@@ -158,12 +174,12 @@ export default function ManagementOperations({ onChanged }: { onChanged: () => v
       </button>)}
     </section>
 
-    {area && <section className="mt-8 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm" aria-label={`${area} records`}>
-      <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-semibold">{areas.find(item => item.id === area)?.title}</h2><button type="button" onClick={() => void loadArea(area)} disabled={loading || busy} className="inline-flex items-center gap-2 rounded-lg border border-[#e5dfd8] px-3 py-2 text-sm disabled:opacity-50"><RefreshCw size={15} /> Refresh</button></div>
+    {area && <section ref={recordsRef} id="management-records" tabIndex={-1} aria-busy={loading} className="mt-8 scroll-mt-6 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm" aria-label={`${draftOnly ? "draft orders" : area} records`}>
+      <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-semibold">{draftOnly ? "Draft orders" : areas.find(item => item.id === area)?.title}</h2><button type="button" onClick={() => void loadArea(area, draftOnly)} disabled={loading || busy} className="inline-flex items-center gap-2 rounded-lg border border-[#e5dfd8] px-3 py-2 text-sm disabled:opacity-50"><RefreshCw size={15} /> Refresh</button></div>
       {error && <p role="alert" className="mt-4 text-sm text-[#a33737]">{error}</p>}
       {notice && <p role="status" className="mt-4 text-sm text-[#276344]">{notice}</p>}
       {loading ? <p className="mt-5 text-sm text-[#716b66]">Loading ERPNext records…</p> : <div className="mt-5 divide-y divide-[#eee9e3]">
-        {area === "orders" && (orders.length ? orders.map(order => <div key={order.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{order.name}</strong><p className="text-[#716b66]">{order.customer_name} · {order.status} · {money(order.grand_total)}</p></div><button type="button" onClick={() => void loadOrder(order.name)} className="font-medium underline underline-offset-4">Review order</button></div>) : <p className="py-3 text-sm text-[#716b66]">No Giftique orders yet.</p>)}
+        {area === "orders" && (orders.length ? orders.map(order => <div key={order.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{order.name}</strong><p className="text-[#716b66]">{order.customer_name} · {order.status} · {money(order.grand_total)}</p></div><button type="button" onClick={() => void loadOrder(order.name)} className="font-medium underline underline-offset-4">Review order</button></div>) : <p className="py-3 text-sm text-[#716b66]">{draftOnly ? "No draft Giftique orders." : "No Giftique orders yet."}</p>)}
         {area === "invoices" && (invoices.length ? invoices.map(invoice => <div key={invoice.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{invoice.name}</strong><p className="text-[#716b66]">{invoice.customer_name} · {invoice.status} · {money(invoice.grand_total)}</p></div><button type="button" onClick={() => void loadInvoice(invoice.name)} className="font-medium underline underline-offset-4">Review invoice</button></div>) : <p className="py-3 text-sm text-[#716b66]">No Giftique invoices yet. Submit an order, then create its invoice.</p>)}
         {area === "customers" && (customers.length ? customers.map(customer => <div key={customer.name} className="py-3 text-sm"><strong>{customer.customer_name}</strong><p className="text-[#716b66]">{customer.email_id || "No email"}{customer.mobile_no ? ` · ${customer.mobile_no}` : ""}</p></div>) : <p className="py-3 text-sm text-[#716b66]">No customers with recent Giftique orders.</p>)}
         {area === "products" && (products.length ? products.map(product => <div key={product.item_code} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><div><strong>{product.item_name}</strong><p className="text-[#716b66]">{product.item_code} · {product.price === null ? "No selling price" : money(product.price)}</p></div><div className="text-right"><strong>{product.actual_qty} {product.stock_uom}</strong><p className="text-[#716b66]">Reserved {product.reserved_qty} · Projected {product.projected_qty}</p></div></div>) : <p className="py-3 text-sm text-[#716b66]">No active Giftique products.</p>)}

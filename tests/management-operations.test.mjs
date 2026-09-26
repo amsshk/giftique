@@ -93,3 +93,11 @@ test("an invoice with an unrelated mapped order is rejected before insertion", a
   await assert.rejects(operations.createDraftInvoice(order.name, order.modified), /did not map a valid Giftique invoice/);
   assert.equal(calls.some(call => call.path.includes("frappe.client.insert")), false);
 });
+
+test("the draft orders view filters by company and draft status in ERPNext", async () => {
+  const calls = mockProxc(() => ({ data: [] }));
+  await operations.listOrders(true);
+  assert.deepEqual(JSON.parse(calls[0].query.get("filters")), [["company", "=", "Giftique"], ["docstatus", "=", 0]]);
+  await operations.listOrders();
+  assert.deepEqual(JSON.parse(calls[1].query.get("filters")), [["company", "=", "Giftique"]]);
+});

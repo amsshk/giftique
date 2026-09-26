@@ -94,11 +94,11 @@ function requireCurrent(modified: string, expectedModified: string) {
   }
 }
 
-export async function listOrders() {
+export async function listOrders(draftOnly = false) {
   return listResource<Omit<Order, "items">>(
     "Sales Order",
     ["name", "company", "customer", "customer_name", "transaction_date", "grand_total", "status", "docstatus", "modified"],
-    [["company", "=", COMPANY]],
+    [["company", "=", COMPANY], ...(draftOnly ? [["docstatus", "=", 0]] : [])],
   );
 }
 
