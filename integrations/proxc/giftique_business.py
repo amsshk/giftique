@@ -13,6 +13,8 @@ from frappe.utils import cint, getdate
 
 COMPANY = "Giftique"
 LETTER_HEAD = "Giftique"
+PAPER_RGB = (241, 228, 222)
+PAPER_COLOR = "#f1e4de"
 ROLE = "Giftique Owner"
 
 # All fields and document types accepted by this API are listed here.
@@ -442,12 +444,13 @@ def _update_letterhead():
     company = frappe.get_doc("Company", COMPANY)
     profile = _profile()
     title = html.escape(profile["display_name"])
-    logo = f'<img src="{html.escape(company.company_logo, quote=True)}" style="max-height:80px;max-width:220px">' if company.company_logo else ""
+    logo = f'<img src="{html.escape(company.company_logo, quote=True)}" alt="Giftique Atelier" style="max-height:175px;max-width:320px">' if company.company_logo else ""
     lines = [profile[k] for k in ["address", "email", "phone_no", "website"] if profile[k]]
     if profile["tax_id"]:
         lines.append("TRN: " + profile["tax_id"])
     details = "<br>".join(html.escape(str(line)).replace("\n", "<br>") for line in lines)
-    content = f'<div style="border-bottom:2px solid #8b6f47;padding:12px 0;margin-bottom:18px">{logo}<h2 style="margin:8px 0;color:#201b18">{title}</h2><div style="font-size:11px;color:#555">{details}</div></div>'
+    heading = logo or f'<h2 style="margin:8px 0;color:#201b18">{title}</h2>'
+    content = f'<div style="text-align:center;border-bottom:1px solid #8b6f47;padding:8px 0 16px;margin-bottom:20px">{heading}<div style="font-size:11px;color:#55443d">{details}</div></div>'
     doc = frappe.get_doc("Letter Head", LETTER_HEAD) if frappe.db.exists("Letter Head", LETTER_HEAD) else frappe.new_doc("Letter Head")
     doc.letter_head_name = LETTER_HEAD
     doc.source = "HTML"
@@ -526,12 +529,43 @@ def _pdf_origin():
         frappe.local.conf.host_name = original
 
 
+def _branded_pdf(markup):
+    """Keep native layout and pagination, then color every PDF page to its edges."""
+    from frappe.utils.pdf import get_pdf
+    from pypdf import PdfReader, PdfWriter, PageObject
+    from pypdf.generic import DecodedStreamObject, NameObject
+
+    style = f"""<style>
+        html, body, .print-format {{ background-color: {PAPER_COLOR} !important; color: #201b18; }}
+        .print-format * {{ background-color: transparent !important; }}
+        body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+    </style>"""
+    markup = markup.replace("</head>", style + "</head>", 1) if "</head>" in markup else style + markup
+    with _pdf_origin():
+        content = get_pdf(markup)
+    reader = PdfReader(io.BytesIO(content))
+    writer = PdfWriter()
+    for page in reader.pages:
+        width, height = float(page.mediabox.width), float(page.mediabox.height)
+        background = PageObject.create_blank_page(width=width, height=height)
+        stream = DecodedStreamObject()
+        rgb = " ".join(f"{channel / 255:.8f}" for channel in PAPER_RGB)
+        stream.set_data(f"q {rgb} rg 0 0 {width} {height} re f Q".encode("ascii"))
+        background[NameObject("/Contents")] = stream
+        page.merge_page(background, over=False)
+        writer.add_page(page)
+    output = io.BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
 @frappe.whitelist()
 def document_pdf(kind, name):
     _owner()
     doc = _print_document(kind, name)
     with _pdf_origin():
-        content = frappe.get_print(doc.doctype, doc.name, print_format="Standard", as_pdf=True, letterhead=LETTER_HEAD)
+        markup = frappe.get_print(doc.doctype, doc.name, print_format="Standard", letterhead=LETTER_HEAD)
+        content = _branded_pdf(markup)
     return {"filename": re.sub(r"[^A-Za-z0-9_.-]", "_", doc.name) + ".pdf", "content": base64.b64encode(content).decode()}
 
 
@@ -564,13 +598,11 @@ def email_document(kind, name, recipient, subject, message, request_id, actor):
 @frappe.whitelist(methods=["POST"])
 def letter_pdf(recipient, subject, message, date, actor):
     _owner()
-    from frappe.utils.pdf import get_pdf
     if not all(isinstance(v, str) for v in [recipient, subject, message]) or len(recipient) > 2000 or len(subject) > 200 or len(message) > 10000:
         frappe.throw("The letter text exceeds the allowed length.")
     letterhead = frappe.db.get_value("Letter Head", LETTER_HEAD, "content") or ""
     body = f'<html><head><meta charset="utf-8"></head><body>{letterhead}<p>{html.escape(str(getdate(date)))}</p><p>{html.escape(recipient).replace(chr(10), "<br>")}</p><h3>{html.escape(subject)}</h3><div style="line-height:1.7">{html.escape(message).replace(chr(10), "<br>")}</div></body></html>'
-    with _pdf_origin():
-        content = get_pdf(body)
+    content = _branded_pdf(body)
     return {"filename": "Giftique-letter.pdf", "content": base64.b64encode(content).decode()}
 
 
