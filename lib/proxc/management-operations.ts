@@ -71,13 +71,14 @@ async function getResource<T>(doctype: string, name: string): Promise<T> {
   return result.data;
 }
 
-async function listResource<T>(doctype: string, fields: string[], filters: unknown, orderBy = "creation desc") {
+async function listResource<T>(doctype: string, fields: string[], filters: unknown, orderBy = "creation desc", parent?: string) {
   const query = new URLSearchParams({
     fields: JSON.stringify(fields),
     filters: JSON.stringify(filters),
     order_by: orderBy,
     limit_page_length: String(MAX_ROWS),
   });
+  if (parent) query.set("parent", parent);
   const result = await proxcRequest("GET", `${resourcePath(doctype)}?${query}`) as FrappeList<T>;
   if (!Array.isArray(result?.data)) throw new Error(`ERPNext did not return a ${doctype} list.`);
   return result.data;
@@ -193,6 +194,8 @@ export async function createDraftInvoice(orderName: string, expectedModified: st
       "Sales Invoice Item",
       ["parent"],
       [["sales_order", "=", order.name], ["docstatus", "!=", 2]],
+      "creation desc",
+      "Sales Invoice",
     );
     if (existing.length) throw new ManagementError(`An invoice already exists for this order: ${existing[0].parent}.`, 409);
 

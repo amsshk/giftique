@@ -33,7 +33,7 @@ const mappedInvoice = {
 function mockProxc(responder) {
   const calls = [];
   globalThis.fetch = async (input, init = {}) => {
-    const request = { path: new URL(input).pathname, method: init.method, body: init.body ? JSON.parse(init.body) : undefined };
+    const request = { path: new URL(input).pathname, query: new URL(input).searchParams, method: init.method, body: init.body ? JSON.parse(init.body) : undefined };
     calls.push(request);
     const result = await responder(request);
     return new Response(JSON.stringify(result), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -66,6 +66,7 @@ test("an existing invoice blocks a second draft", async () => {
     : { data: order });
   await assert.rejects(operations.createDraftInvoice(order.name, order.modified), { status: 409, message: /SINV-EXISTING/ });
   assert.equal(calls.length, 2);
+  assert.equal(calls[1].query.get("parent"), "Sales Invoice");
   assert.equal(calls.some(call => call.path.includes("make_sales_invoice")), false);
 });
 
