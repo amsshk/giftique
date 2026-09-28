@@ -52,7 +52,7 @@ function LiveOverview({ refreshKey, onOpenArea }: { refreshKey: number; onOpenAr
   return (
     <section className="mb-8 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm" aria-label="Live Giftique overview">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b6f47]">Live from PROXC</p><h2 className="mt-1 text-xl font-semibold">Business overview</h2></div>
+        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8b6f47]">Live business data</p><h2 className="mt-1 text-xl font-semibold">Business overview</h2><p className="mt-1 text-sm text-[#716b66]">A live view of your Giftique business</p></div>
         <button type="button" onClick={() => void refresh()} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-[#e5dfd8] px-3 py-2 text-sm disabled:opacity-50"><RefreshCw size={15} /> Refresh</button>
       </div>
       {loading && !overview ? <p className="mt-5 text-sm text-[#716b66]">Loading Giftique data…</p> : null}
