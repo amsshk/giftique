@@ -89,14 +89,14 @@ function ManagementHome() {
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.25em] text-[#8b6f47]">Giftique Atelier</p>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight">Management</h1>
-            <p className="mt-2 text-[#716b66]">Powered by PROXC</p>
+            <p className="mt-2 text-[#716b66]">Business workspace</p>
           </div>
         </header>
 
         <section className="mb-8 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm">
-          <h2 className="text-xl font-semibold">Your Giftique management area</h2>
+          <h2 className="text-xl font-semibold">Your Giftique workspace</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#716b66]">
-            Review orders, prepare invoices, and see current customer, product, stock, and delivery records. Your changes are saved in ERPNext through PROXC.
+            Review orders, prepare invoices, and see current customer, product, stock, and delivery records. Your changes are saved securely in your Giftique workspace.
           </p>
         </section>
 

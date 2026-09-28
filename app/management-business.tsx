@@ -37,8 +37,8 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
   return <>
     <nav aria-label="Management sections" className="mb-6 flex flex-wrap gap-2">{tabs.map(item => <button key={item} type="button" aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)} className={tab === item ? primary : button}>{item}</button>)}</nav>
     {tab === "Operations" ? children : <section className="rounded-2xl border border-[#e5dfd8] bg-white p-5 sm:p-7" aria-label={tab}>
-      <h2 className="text-2xl font-semibold">{tab}</h2><p className="mb-6 mt-2 text-sm text-[#716b66]">Giftique · Owner access · Records saved in ERPNext</p>
-      {error ? <><p role="alert" className="text-red-800">{error}</p><button className={button} onClick={() => void load()}>Retry connection</button></> : !caps ? <p role="status">Loading business setup…</p> : <>
+      <h2 className="text-2xl font-semibold">{tab}</h2><p className="mb-6 mt-2 text-sm text-[#716b66]">Giftique · Owner access</p>
+      {error ? <><p role="alert" className="text-red-800">{error}</p><button className={button} onClick={() => void load()}>Retry connection</button></> : !caps ? <p role="status">Preparing your workspace…</p> : <>
         {tab === "Invoice files" && <InvoiceFiles supabase={supabase} />}
         {tab === "Accounting" && <><Reports supabase={supabase} /><RecordArea api={api} caps={caps} kinds={["journals", "accounts"]} /></>}
         {tab === "Cash & Banks" && <><Payments api={api} /><RecordArea api={api} caps={caps} kinds={["payments", "bank_accounts", "banks"]} /></>}
