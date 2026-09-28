@@ -166,8 +166,9 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
   return <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
     <aside className="rounded-2xl border border-[#e5dfd8] bg-[#292320] p-3 text-white shadow-sm lg:sticky lg:top-6" aria-label="Giftique operations">
       <div className="px-3 pb-3 pt-2">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#c4a167]">Operations</p>
-        <h2 className="mt-1 text-lg font-semibold">Giftique workspace</h2>
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#c4a167]">Workspace</p>
+        <h2 className="mt-1 text-lg font-semibold">Operations</h2>
+        <p className="mt-1 text-xs leading-5 text-[#bdb2aa]">Orders, customers, products and delivery</p>
       </div>
       <nav className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
         {areas.map(({ id, title, description, icon: Icon }) => <button
@@ -198,6 +199,11 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
     </aside>
 
     <div className="min-w-0">
+      <div className="mb-5">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#9a8a79]">Business control centre</p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#403a35]">Today at Giftique</h2>
+        <p className="mt-1 text-sm text-[#716b66]">Live orders, invoices, customers, stock and deliveries.</p>
+      </div>
       {renderOverview((next, onlyDrafts) => { setNotice(""); void loadArea(next, onlyDrafts); })}
 
       {!area && <section className="rounded-2xl border border-dashed border-[#d8cec3] bg-white px-6 py-12 text-center shadow-sm">
@@ -209,12 +215,14 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
       </section>}
 
       {area && <section ref={recordsRef} id="management-records" tabIndex={-1} aria-busy={loading} className="mt-8 scroll-mt-6 rounded-2xl border border-[#e5dfd8] bg-white p-7 shadow-sm" aria-label={`${draftOnly ? "draft orders" : area} records`}>
-      <div className="flex items-center justify-between gap-3"><h2 className="text-xl font-semibold">{draftOnly ? "Draft orders" : areas.find(item => item.id === area)?.title}</h2><button type="button" onClick={() => void loadArea(area, draftOnly)} disabled={loading || busy} className="inline-flex items-center gap-2 rounded-lg border border-[#e5dfd8] px-3 py-2 text-sm disabled:opacity-50"><RefreshCw size={15} /> Refresh</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a8a79]">Records</p><h2 className="mt-1 text-xl font-semibold">{draftOnly ? "Draft orders" : areas.find(item => item.id === area)?.title}</h2></div>
+        <button type="button" onClick={() => void loadArea(area, draftOnly)} disabled={loading || busy} className="inline-flex items-center gap-2 rounded-lg border border-[#e5dfd8] px-3 py-2 text-sm disabled:opacity-50"><RefreshCw size={15} /> Refresh</button></div>
       {error && <p role="alert" className="mt-4 text-sm text-[#a33737]">{error}</p>}
       {notice && <p role="status" className="mt-4 text-sm text-[#276344]">{notice}</p>}
       {loading ? <p className="mt-5 text-sm text-[#716b66]">Loading business records…</p> : <div className="mt-5 divide-y divide-[#eee9e3]">
-        {area === "orders" && (orders.length ? orders.map(order => <div key={order.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{order.name}</strong><p className="text-[#716b66]">{order.customer_name} · {order.status} · {money(order.grand_total)}</p></div><button type="button" onClick={() => void loadOrder(order.name)} className="font-medium underline underline-offset-4">Review order</button></div>) : <p className="py-3 text-sm text-[#716b66]">{draftOnly ? "No draft Giftique orders." : "No Giftique orders yet."}</p>)}
-        {area === "invoices" && (invoices.length ? invoices.map(invoice => <div key={invoice.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{invoice.name}</strong><p className="text-[#716b66]">{invoice.customer_name} · {invoice.status} · {money(invoice.grand_total)}</p></div><button type="button" onClick={() => void loadInvoice(invoice.name)} className="font-medium underline underline-offset-4">Review invoice</button></div>) : <p className="py-3 text-sm text-[#716b66]">No Giftique invoices yet. Submit an order, then create its invoice.</p>)}
+        {area === "orders" && (orders.length ? orders.map(order => <div key={order.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{order.name}</strong><p className="text-[#716b66]">{order.customer_name} · {order.status} · {money(order.grand_total)}</p></div><button type="button" onClick={() => void loadOrder(order.name)} className="font-medium text-[#725839] underline underline-offset-4">Review</button></div></div>) : <p className="py-3 text-sm text-[#716b66]">{draftOnly ? "No draft Giftique orders." : "No Giftique orders yet."}</p>)}
+        {area === "invoices" && (invoices.length ? invoices.map(invoice => <div key={invoice.name} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><strong>{invoice.name}</strong><p className="text-[#716b66]">{invoice.customer_name} · {invoice.status} · {money(invoice.grand_total)}</p></div><button type="button" onClick={() => void loadInvoice(invoice.name)} className="font-medium text-[#725839] underline underline-offset-4">Review</button></div></div>) : <p className="py-3 text-sm text-[#716b66]">No Giftique invoices yet. Submit an order, then create its invoice.</p>)}
         {area === "customers" && (customers.length ? customers.map(customer => <div key={customer.name} className="py-3 text-sm"><strong>{customer.customer_name}</strong><p className="text-[#716b66]">{customer.email_id || "No email"}{customer.mobile_no ? ` · ${customer.mobile_no}` : ""}</p></div>) : <p className="py-3 text-sm text-[#716b66]">No customers with recent Giftique orders.</p>)}
         {area === "products" && (products.length ? products.map(product => <div key={product.item_code} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><div><strong>{product.item_name}</strong><p className="text-[#716b66]">{product.item_code} · {product.price === null ? "No selling price" : money(product.price)}</p></div><div className="text-right"><strong>{product.actual_qty} {product.stock_uom}</strong><p className="text-[#716b66]">Reserved {product.reserved_qty} · Projected {product.projected_qty}</p></div></div>) : <p className="py-3 text-sm text-[#716b66]">No active Giftique products.</p>)}
         {area === "delivery" && (delivery.length ? delivery.map(note => <div key={note.name} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><div><strong>{note.name}</strong><p className="text-[#716b66]">{note.customer_name} · {note.status}</p></div><span>{note.posting_date}</span></div>) : <p className="py-3 text-sm text-[#716b66]">No Giftique delivery notes yet.</p>)}
@@ -227,4 +235,13 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
       </section>}
     </div>
   </div>;
+}
+
+
+function statusTone(status: string) {
+  const value = status.toLowerCase();
+  if (value.includes("cancel") || value.includes("overdue") || value.includes("lost")) return "bg-red-50 text-red-700";
+  if (value.includes("draft") || value.includes("open")) return "bg-amber-50 text-amber-800";
+  if (value.includes("complete") || value.includes("paid") || value.includes("delivered") || value.includes("submitted")) return "bg-green-50 text-green-700";
+  return "bg-[#f3eee7] text-[#655d56]";
 }
