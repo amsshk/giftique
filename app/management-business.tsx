@@ -33,22 +33,66 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
   const load = useCallback(async () => { setError(""); try { setCaps(await api<Capabilities>({ action: "capabilities" })); } catch (e) { setError(e instanceof Error ? e.message : "Setup unavailable."); } }, [api]);
   useEffect(() => { let active = true; void supabase.auth.getSession().then(({ data }) => { if (active) setOwner(data.session?.user.app_metadata?.role === "owner"); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setOwner(session?.user.app_metadata?.role === "owner"); setCaps(null); setTab("Operations"); }); return () => { active = false; subscription.unsubscribe(); }; }, [supabase]);
   useEffect(() => { if (owner) { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); } }, [owner, load]);
-  const tabs = owner ? ["Operations", "Invoice files", "Accounting", "Cash & Banks", "Credit & Bills", "Staff", "Payroll", "Company & Documents"] : ["Operations"];
-  return <>
-    <nav aria-label="Management sections" className="mb-6 flex flex-wrap gap-2">{tabs.map(item => <button key={item} type="button" aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)} className={tab === item ? primary : button}>{item}</button>)}</nav>
-    {tab === "Operations" ? children : <section className="rounded-2xl border border-[#e5dfd8] bg-white p-5 sm:p-7" aria-label={tab}>
-      <h2 className="text-2xl font-semibold">{tab}</h2><p className="mb-6 mt-2 text-sm text-[#716b66]">Giftique · Owner access</p>
-      {error ? <><p role="alert" className="text-red-800">{error}</p><button className={button} onClick={() => void load()}>Retry connection</button></> : !caps ? <p role="status">Preparing your workspace…</p> : <>
-        {tab === "Invoice files" && <InvoiceFiles supabase={supabase} />}
-        {tab === "Accounting" && <><Reports supabase={supabase} /><RecordArea api={api} caps={caps} kinds={["journals", "accounts"]} /></>}
-        {tab === "Cash & Banks" && <><Payments api={api} /><RecordArea api={api} caps={caps} kinds={["payments", "bank_accounts", "banks"]} /></>}
-        {tab === "Credit & Bills" && <><p className="mb-4 text-sm">Track supplier bills and customer credit notes. Receivables and payables ageing are available in Accounting.</p><CreditNote api={api} /><RecordArea api={api} caps={caps} kinds={["purchase_invoices", "suppliers", "customers"]} /></>}
-        {tab === "Staff" && <><p className="mb-4 text-sm">Employee records are private to the owner. Adding an employee does not create a website login.</p><RecordArea api={api} caps={caps} kinds={["employees", "departments", "designations", "holiday_lists", "holiday_assignments"]} /></>}
-        {tab === "Payroll" && (caps.payroll ? <><p className="mb-4 text-sm leading-6">Set up employees, holiday lists, and submitted holiday assignments in Staff. Create salary components and structures, then assign a structure to each employee. Save a payroll run, submit it to create draft salary slips, review those slips, and submit payroll to post the accrual. Salary bank transfers are performed separately.</p><RecordArea api={api} caps={caps} kinds={["payroll_runs", "salary_slips", "salary_assignments", "salary_structures", "salary_components"]} /></> : <p role="alert">Payroll requires the HRMS installation to be completed.</p>)}
-        {tab === "Company & Documents" && <Documents api={api} caps={caps} onChanged={load} supabase={supabase} />}
-      </>}
-    </section>}
-  </>;
+  const tabs = owner
+    ? ["Operations", "Invoice files", "Accounting", "Cash & Banks", "Credit & Bills", "Delivery & Shipping", "Staff", "Payroll", "Company & Documents"]
+    : ["Operations"];
+
+  const icons: Record<string, string> = {
+    "Operations": "⌂",
+    "Invoice files": "▤",
+    "Accounting": "▥",
+    "Cash & Banks": "◈",
+    "Credit & Bills": "◇",
+    "Delivery & Shipping": "↗",
+    "Staff": "♙",
+    "Payroll": "▣",
+    "Company & Documents": "▧",
+  };
+
+  return (
+    <div className="flex min-h-[calc(100vh-120px)] flex-col gap-5 lg:flex-row lg:items-start">
+      <aside className="w-full shrink-0 lg:sticky lg:top-5 lg:w-60" aria-label="Management navigation">
+        <div className="overflow-hidden rounded-2xl border border-[#e5dfd8] bg-white shadow-[0_8px_30px_rgba(70,55,40,0.05)]">
+          <div className="border-b border-[#eee8e0] px-5 py-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b7a67]">Giftique</p>
+            <h1 className="mt-1 text-lg font-semibold tracking-tight text-[#403a35]">Management</h1>
+            {owner && <p className="mt-1 text-xs text-[#8b837c]">Owner workspace</p>}
+          </div>
+          <nav className="flex gap-1 overflow-x-auto p-2 lg:block lg:overflow-visible" aria-label="Management sections">
+            {tabs.map(item => (
+              <button key={item} type="button" aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)}
+                className={tab === item ? "flex min-w-max w-full items-center gap-3 rounded-xl bg-[#725839] px-3 py-2.5 text-left text-sm font-medium text-white shadow-sm" : "flex min-w-max w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#655d56] hover:bg-[#f7f3ed] hover:text-[#403a35]"}>
+                <span className={tab === item ? "grid h-7 w-7 place-items-center rounded-lg bg-white/15 text-sm" : "grid h-7 w-7 place-items-center rounded-lg bg-[#f7f3ed] text-sm text-[#8b7a67]"} aria-hidden="true">{icons[item]}</span>
+                <span>{item}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      <main className="min-w-0 flex-1">
+        {tab === "Operations" ? children : (
+          <section className="rounded-2xl border border-[#e5dfd8] bg-white p-5 shadow-[0_8px_30px_rgba(70,55,40,0.04)] sm:p-7" aria-label={tab}>
+            <div className="mb-7 border-b border-[#eee8e0] pb-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#9a8a79]">Giftique Management</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#403a35]">{tab}</h2>
+              <p className="mt-1 text-sm text-[#716b66]">Owner workspace · Real business data</p>
+            </div>
+            {error ? <><p role="alert" className="text-red-800">{error}</p><button className={button} onClick={() => void load()}>Retry connection</button></> : !caps ? <p role="status">Preparing your workspace…</p> : <>
+              {tab === "Invoice files" && <InvoiceFiles supabase={supabase} />}
+              {tab === "Accounting" && <><Reports supabase={supabase}/><RecordArea api={api} caps={caps} kinds={["journals", "accounts"]}/></>}
+              {tab === "Cash & Banks" && <><Payments api={api}/><RecordArea api={api} caps={caps} kinds={["payments", "bank_accounts", "banks"]}/></>}
+              {tab === "Credit & Bills" && <><p className="mb-4 text-sm">Track supplier bills and customer credit notes. Receivables and payables ageing are available in Accounting.</p><CreditNote api={api}/><RecordArea api={api} caps={caps} kinds={["purchase_invoices", "suppliers", "customers"]}/></>}
+              {tab === "Delivery & Shipping" && <><p className="mb-4 text-sm leading-6">Create and manage delivery notes and shipments, including delivery addresses, drivers, vehicles, tracking details, parcel information, and shipment status.</p><RecordArea api={api} caps={caps} kinds={["deliveries", "shipments"]}/></>}
+              {tab === "Staff" && <><p className="mb-4 text-sm">Employee records are private to the owner. Adding an employee does not create a website login.</p><RecordArea api={api} caps={caps} kinds={["employees", "departments", "designations", "holiday_lists", "holiday_assignments"]}/></>}
+              {tab === "Payroll" && (caps.payroll ? <><p className="mb-4 text-sm leading-6">Set up employees, holiday lists, and submitted holiday assignments in Staff. Create salary components and structures, then assign a structure to each employee. Save a payroll run, submit it to create draft salary slips, review those slips, and submit payroll to post the accrual. Salary bank transfers are performed separately.</p><RecordArea api={api} caps={caps} kinds={["payroll_runs", "salary_slips", "salary_assignments", "salary_structures", "salary_components"]}/></> : <p role="alert">Payroll requires the HRMS installation to be completed.</p>)}
+              {tab === "Company & Documents" && <Documents api={api} caps={caps} onChanged={load} supabase={supabase}/>}
+            </>}
+          </section>
+        )}
+      </main>
+    </div>
+  );
 }
 
 function Reports({ supabase }: { supabase: ReturnType<typeof createSupabaseBrowserClient> }) {
