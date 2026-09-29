@@ -163,40 +163,39 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
     }
   }
 
-  return <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-    <aside className="rounded-2xl border border-[#e5dfd8] bg-[#292320] p-3 text-white shadow-sm lg:sticky lg:top-6" aria-label="Giftique operations">
-      <div className="px-3 pb-3 pt-2">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#c4a167]">Workspace</p>
-        <h2 className="mt-1 text-lg font-semibold">Operations</h2>
-        <p className="mt-1 text-xs leading-5 text-[#bdb2aa]">Orders, customers, products and delivery</p>
+  return <div className="min-w-0">
+    <nav className="mb-6 rounded-2xl border border-[#e5dfd8] bg-white p-3 shadow-sm" aria-label="Giftique operations">
+      <div className="mb-3 px-2">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#9a8a79]">Operations</p>
+        <p className="mt-1 text-xs text-[#716b66]">Orders, invoices, customers, products and delivery</p>
       </div>
-      <nav className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
         {areas.map(({ id, title, description, icon: Icon }) => <button
           key={id}
           type="button"
           onClick={() => { setNotice(""); void loadArea(id); }}
           aria-pressed={area === id}
           aria-controls="management-records"
-          className={`group flex min-w-0 items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
+          className={`group flex min-w-0 items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
             area === id
-              ? "bg-white text-[#201b18] shadow-sm"
-              : "text-[#eee7df] hover:bg-white/10 hover:text-white"
+              ? "border-[#725839] bg-[#725839] text-white shadow-sm"
+              : "border-[#eee8e0] bg-[#faf8f5] text-[#403a35] hover:border-[#d9cfc3] hover:bg-[#f5efe7]"
           }`}
         >
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-            area === id ? "bg-[#f1ece5] text-[#8b6f47]" : "bg-white/10 text-[#d5bc93]"
+            area === id ? "bg-white/15 text-white" : "bg-white text-[#8b6f47] border border-[#eee8e0]"
           }`}>
             <Icon size={18} />
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold">{title}</span>
             <span className={`mt-0.5 block truncate text-xs ${
-              area === id ? "text-[#716b66]" : "text-[#bdb2aa]"
+              area === id ? "text-white/75" : "text-[#8b837c]"
             }`}>{description}</span>
           </span>
         </button>)}
-      </nav>
-    </aside>
+      </div>
+    </nav>
 
     <div className="min-w-0">
       <div className="mb-5">
