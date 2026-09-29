@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   AtSign,
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "../../lib/supabase";
 
+import { presentStorefrontProduct } from "../../lib/storefront-products";
+
 type Product = {
   id: string;
   name: string;
@@ -21,6 +23,15 @@ type Product = {
   category: string;
   price: number;
   image_url: string | null;
+  erp_item_code: string | null;
+};
+
+type DeliveryLocation = { latitude: number; longitude: number; };
+type LeafletMapInstance = any;
+
+type ProxcOrderResponse = {
+  error?: string;
+  message?: { ok?: boolean; error?: string; order?: { name: string } };
 };
 
 const money = (value: number) =>
@@ -28,6 +39,144 @@ const money = (value: number) =>
     style: "currency",
     currency: "AED",
   }).format(value);
+
+
+function UaePinPicker({ value, onChange, onClose }: {
+  value: DeliveryLocation | null;
+  onChange: (location: DeliveryLocation) => void;
+  onClose: () => void;
+}) {
+  const mapHost = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<LeafletMapInstance | null>(null);
+  const markerRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState("");
+
+  useEffect(() => {
+    if (!mapHost.current) return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        if (!(window as any).L) {
+          if (!document.querySelector('link[data-giftique-leaflet]')) {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+            link.dataset.giftiqueLeaflet = "true";
+            document.head.appendChild(link);
+          }
+          await new Promise<void>((resolve, reject) => {
+            const existing = document.querySelector('script[data-giftique-leaflet]') as HTMLScriptElement | null;
+            if (existing) {
+              existing.addEventListener("load", () => resolve(), { once: true });
+              existing.addEventListener("error", () => reject(new Error("Map failed to load")), { once: true });
+              return;
+            }
+            const script = document.createElement("script");
+            script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+            script.async = true;
+            script.dataset.giftiqueLeaflet = "true";
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error("Map failed to load"));
+            document.body.appendChild(script);
+          });
+        }
+        if (cancelled || !mapHost.current) return;
+        const L = (window as any).L;
+        const map = L.map(mapHost.current, {
+          center: value ? [value.latitude, value.longitude] : [24.35, 54.55],
+          zoom: value ? 15 : 6,
+          minZoom: 5,
+          maxZoom: 18,
+          maxBounds: [[22.55, 51.35], [26.35, 56.65]],
+          maxBoundsViscosity: 0.85,
+        });
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+        map.on("click", (event: any) => {
+          const location = {
+            latitude: Number(event.latlng.lat.toFixed(7)),
+            longitude: Number(event.latlng.lng.toFixed(7)),
+          };
+          onChange(location);
+          if (markerRef.current) markerRef.current.setLatLng(event.latlng);
+          else markerRef.current = L.marker(event.latlng).addTo(map);
+        });
+        if (value) markerRef.current = L.marker([value.latitude, value.longitude]).addTo(map);
+        mapRef.current = map;
+        setReady(true);
+        window.setTimeout(() => map.invalidateSize(), 50);
+      } catch (error) {
+        if (!cancelled) setMapError(error instanceof Error ? error.message : "Unable to load the map.");
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setMapError("Your browser does not provide location access.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          latitude: Number(position.coords.latitude.toFixed(7)),
+          longitude: Number(position.coords.longitude.toFixed(7)),
+        };
+        if (location.latitude < 22.55 || location.latitude > 26.35 || location.longitude < 51.35 || location.longitude > 56.65) {
+          setMapError("Please choose a delivery location inside the UAE.");
+          return;
+        }
+        onChange(location);
+        const L = (window as any).L;
+        if (mapRef.current && L) {
+          mapRef.current.setView([location.latitude, location.longitude], 16);
+          if (markerRef.current) markerRef.current.setLatLng([location.latitude, location.longitude]);
+          else markerRef.current = L.marker([location.latitude, location.longitude]).addTo(mapRef.current);
+        }
+      },
+      () => setMapError("Location access was not available. You can still tap the map to place the pin."),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  return (
+    <div className="gq-pin-picker">
+      <div className="gq-pin-picker-header">
+        <div>
+          <span className="gq-eyebrow">Delivery location</span>
+          <h3>Place the pin at the door.</h3>
+          <p>Tap the map where you want your Giftique order delivered.</p>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close map"><X size={18} strokeWidth={1.5} /></button>
+      </div>
+      <div className="gq-pin-map" ref={mapHost} />
+      <div className="gq-pin-actions">
+        <button type="button" onClick={useCurrentLocation}>Use my current location</button>
+        <span>{ready ? "Tap anywhere on the UAE map to move the pin." : "Loading map…"}</span>
+      </div>
+      {mapError && <p className="gq-pin-error">{mapError}</p>}
+      <div className="gq-pin-footer">
+        <small>Map data © OpenStreetMap contributors</small>
+        <button type="button" className="gq-checkout-submit" disabled={!value} onClick={onClose}>
+          Confirm location <ArrowRight size={15} strokeWidth={1.5} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -40,6 +189,15 @@ export default function StorePage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryBuilding, setDeliveryBuilding] = useState("");
+  const [deliveryUnit, setDeliveryUnit] = useState("");
+  const [deliveryFloor, setDeliveryFloor] = useState("");
+  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [preferredDeliveryDate, setPreferredDeliveryDate] = useState("");
+  const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState<DeliveryLocation | null>(null);
+  const [pinPickerOpen, setPinPickerOpen] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [placing, setPlacing] = useState(false);
 
@@ -53,7 +211,7 @@ export default function StorePage() {
         const { data, error: queryError } = await supabase
           .from("storefront_products")
           .select(
-            "id,name,description,category,price,image_url"
+            "id,name,description,category,price,image_url,erp_item_code"
           )
           .eq("active", true)
           .order("created_at", { ascending: false });
@@ -61,7 +219,7 @@ export default function StorePage() {
         if (!active) return;
         if (queryError) throw queryError;
 
-        setProducts((data || []) as Product[]);
+        setProducts(((data || []) as Product[]).map(presentStorefrontProduct));
       } catch {
         if (active) {
           setError(
@@ -116,39 +274,93 @@ export default function StorePage() {
     setPlacing(true);
     setCheckoutMessage("");
 
-    const items = bag.map((product) => ({
-      product_id: product.id,
-      quantity: 1,
-    }));
+    const grouped = new Map<string, number>();
 
-    const { data, error: orderError } = await supabase.rpc(
-      "place_public_order",
-      {
-        p_items: items,
-        p_customer_name: customerName,
-        p_customer_email: customerEmail,
-        p_customer_phone: customerPhone,
+    for (const product of bag) {
+      if (!product.erp_item_code) {
+        setPlacing(false);
+        setCheckoutMessage(
+          `The product "${product.name}" is not currently available for checkout.`
+        );
+        return;
       }
-    );
 
-    setPlacing(false);
-
-    if (orderError) {
-      setCheckoutMessage(orderError.message);
-      return;
+      grouped.set(
+        product.erp_item_code,
+        (grouped.get(product.erp_item_code) || 0) + 1
+      );
     }
 
-    setBag([]);
-    setCheckoutOpen(false);
-    setBagOpen(false);
-
-    setCheckoutMessage(
-      `Order ${data.reference} received. We will contact you shortly.`
+    const items = Array.from(grouped.entries()).map(
+      ([item_code, quantity]) => ({
+        item_code,
+        quantity,
+      })
     );
+
+    try {
+      const response = await fetch("/api/proxc-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          delivery_address: deliveryAddress,
+          delivery_building: deliveryBuilding,
+          delivery_unit: deliveryUnit,
+          delivery_floor: deliveryFloor,
+          delivery_instructions: deliveryInstructions,
+          preferred_delivery_date: preferredDeliveryDate,
+          preferred_delivery_time: preferredDeliveryTime,
+          delivery_latitude: deliveryLocation?.latitude ?? null,
+          delivery_longitude: deliveryLocation?.longitude ?? null,
+          items,
+        }),
+      });
+
+      const data = (await response.json()) as ProxcOrderResponse;
+
+      if (!response.ok || !data.message?.ok || !data.message.order?.name) {
+        throw new Error(
+          data?.error ||
+            data?.message?.error ||
+            "Unable to create the order."
+        );
+      }
+
+      const order = data.message.order;
+
+      setBag([]);
+      setCheckoutOpen(false);
+      setBagOpen(false);
+
+      setCheckoutMessage(
+        `Order ${order.name} received. We will contact you shortly.`
+      );
+    } catch (error) {
+      setCheckoutMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to create the order."
+      );
+    } finally {
+      setPlacing(false);
+    }
 
     setCustomerName("");
     setCustomerEmail("");
     setCustomerPhone("");
+    setDeliveryAddress("");
+    setDeliveryBuilding("");
+    setDeliveryUnit("");
+    setDeliveryFloor("");
+    setDeliveryInstructions("");
+    setPreferredDeliveryDate("");
+    setPreferredDeliveryTime("");
+    setDeliveryLocation(null);
   }
 
   return (
@@ -444,7 +656,7 @@ export default function StorePage() {
 
         <p>Made for the moment after they open it.</p>
 
-        <a href="./">Team access</a>
+        <a href="/management">Team access</a>
 
         <span className="gq-footer-index">04 / 04</span>
       </footer>
@@ -621,6 +833,47 @@ export default function StorePage() {
               />
             </label>
 
+            <div className="gq-delivery-section">
+              <div className="gq-delivery-heading">
+                <span className="gq-eyebrow">Delivery</span>
+                <h3>Where should we bring it?</h3>
+                <p>Your pin helps us find the right location. You can move it until it sits exactly where you want the delivery made.</p>
+              </div>
+
+              <button type="button" className="gq-pin-button" onClick={() => setPinPickerOpen(true)}>
+                <MapPin size={17} strokeWidth={1.5} />
+                {deliveryLocation ? "Move delivery pin" : "Drop a pin"}
+              </button>
+
+              {deliveryLocation && (
+                <div className="gq-pin-confirmed">
+                  <MapPin size={15} strokeWidth={1.5} />
+                  <span>Pin saved at {deliveryLocation.latitude.toFixed(5)}, {deliveryLocation.longitude.toFixed(5)}</span>
+                </div>
+              )}
+
+              <label>
+                Delivery address
+                <textarea required value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Street, area, building or villa address" rows={3} />
+              </label>
+
+              <div className="gq-delivery-grid">
+                <label>Building / Villa<input value={deliveryBuilding} onChange={(event) => setDeliveryBuilding(event.target.value)} placeholder="Building or villa" /></label>
+                <label>Apartment / Office<input value={deliveryUnit} onChange={(event) => setDeliveryUnit(event.target.value)} placeholder="Unit" /></label>
+                <label>Floor<input value={deliveryFloor} onChange={(event) => setDeliveryFloor(event.target.value)} placeholder="Floor" /></label>
+              </div>
+
+              <label>
+                Delivery instructions
+                <textarea value={deliveryInstructions} onChange={(event) => setDeliveryInstructions(event.target.value)} placeholder="Gate, reception, landmark, preferred entrance…" rows={2} />
+              </label>
+
+              <div className="gq-delivery-grid">
+                <label>Preferred date<input type="date" value={preferredDeliveryDate} onChange={(event) => setPreferredDeliveryDate(event.target.value)} /></label>
+                <label>Preferred time<input type="time" value={preferredDeliveryTime} onChange={(event) => setPreferredDeliveryTime(event.target.value)} /></label>
+              </div>
+            </div>
+
             <button
               className="gq-checkout-submit"
               type="submit"
@@ -641,6 +894,11 @@ export default function StorePage() {
               </p>
             )}
           </form>
+          {pinPickerOpen && (
+            <div className="gq-pin-overlay">
+              <UaePinPicker value={deliveryLocation} onChange={setDeliveryLocation} onClose={() => setPinPickerOpen(false)} />
+            </div>
+          )}
         </div>
       )}
     </main>
