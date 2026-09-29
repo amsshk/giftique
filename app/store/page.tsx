@@ -879,46 +879,9 @@ export default function StorePage() {
               {deliveryLocation && (
                 <div className="gq-pin-confirmed">
                   <MapPin size={15} strokeWidth={1.5} />
-                  <span>Pin saved at {deliveryLocation.latitude.toFixed(5)}, {deliveryLocation.longitude.toFixed(5)}</span>
+                  <span>{addressLoading ? "Finding your delivery address…" : deliveryAddress || "Delivery location selected"}</span>
                 </div>
               )}
-
-              <label>
-                Delivery address
-                <textarea
-                  required
-                  readOnly={!!deliveryLocation}
-                  value={deliveryAddress}
-                  onChange={(event) => setDeliveryAddress(event.target.value)}
-                  placeholder={deliveryLocation ? "Finding the address…" : "Drop a pin to fill this automatically"}
-                  rows={3}
-                />
-                {deliveryLocation && (
-                  <span className="gq-address-status">
-                    {addressLoading ? "Finding the address from your pin…" : "Address filled from your delivery pin"}
-                  </span>
-                )}
-              </label>
-
-              <div className="gq-delivery-grid">
-                <label>
-                  Building / Villa
-                  <input value={deliveryBuilding} onChange={(event) => setDeliveryBuilding(event.target.value)} placeholder="Building or villa" />
-                </label>
-                <label>
-                  Apartment / Office
-                  <input value={deliveryUnit} onChange={(event) => setDeliveryUnit(event.target.value)} placeholder="Unit" />
-                </label>
-                <label>
-                  Floor
-                  <input value={deliveryFloor} onChange={(event) => setDeliveryFloor(event.target.value)} placeholder="Floor" />
-                </label>
-              </div>
-
-              <label>
-                Delivery instructions
-                <textarea value={deliveryInstructions} onChange={(event) => setDeliveryInstructions(event.target.value)} placeholder="Gate, reception, landmark, preferred entrance…" rows={3} />
-              </label>
 
               <div className="gq-delivery-schedule">
                 <label>
