@@ -1433,6 +1433,15 @@
   resize: vertical;
 }
 
+.gq-address-status {
+  display: block;
+  margin-top: 6px;
+  color: var(--gq-muted);
+  font: 10px/1.4 Arial, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .gq-checkout input:focus,
 .gq-checkout textarea:focus {
   border-color: var(--gq-ink);
