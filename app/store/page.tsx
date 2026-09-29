@@ -858,19 +858,52 @@ export default function StorePage() {
               </label>
 
               <div className="gq-delivery-grid">
-                <label>Building / Villa<input value={deliveryBuilding} onChange={(event) => setDeliveryBuilding(event.target.value)} placeholder="Building or villa" /></label>
-                <label>Apartment / Office<input value={deliveryUnit} onChange={(event) => setDeliveryUnit(event.target.value)} placeholder="Unit" /></label>
-                <label>Floor<input value={deliveryFloor} onChange={(event) => setDeliveryFloor(event.target.value)} placeholder="Floor" /></label>
+                <label>
+                  Building / Villa
+                  <input value={deliveryBuilding} onChange={(event) => setDeliveryBuilding(event.target.value)} placeholder="Building or villa" />
+                </label>
+                <label>
+                  Apartment / Office
+                  <input value={deliveryUnit} onChange={(event) => setDeliveryUnit(event.target.value)} placeholder="Unit" />
+                </label>
+                <label>
+                  Floor
+                  <input value={deliveryFloor} onChange={(event) => setDeliveryFloor(event.target.value)} placeholder="Floor" />
+                </label>
               </div>
 
               <label>
                 Delivery instructions
-                <textarea value={deliveryInstructions} onChange={(event) => setDeliveryInstructions(event.target.value)} placeholder="Gate, reception, landmark, preferred entrance…" rows={2} />
+                <textarea value={deliveryInstructions} onChange={(event) => setDeliveryInstructions(event.target.value)} placeholder="Gate, reception, landmark, preferred entrance…" rows={3} />
               </label>
 
-              <div className="gq-delivery-grid">
-                <label>Preferred date<input type="date" value={preferredDeliveryDate} onChange={(event) => setPreferredDeliveryDate(event.target.value)} /></label>
-                <label>Preferred time<input type="time" value={preferredDeliveryTime} onChange={(event) => setPreferredDeliveryTime(event.target.value)} /></label>
+              <div className="gq-delivery-schedule">
+                <label>
+                  Delivery date
+                  <input required type="date" value={preferredDeliveryDate} onChange={(event) => setPreferredDeliveryDate(event.target.value)} />
+                </label>
+
+                <div className="gq-delivery-window">
+                  <span>Delivery window</span>
+                  <div className="gq-delivery-window-options">
+                    <button
+                      type="button"
+                      className={preferredDeliveryTime === "08:00:00" ? "is-selected" : ""}
+                      onClick={() => setPreferredDeliveryTime("08:00:00")}
+                    >
+                      <strong>8:00 AM – 12:00 PM</strong>
+                      <small>Morning delivery</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={preferredDeliveryTime === "12:00:00" ? "is-selected" : ""}
+                      onClick={() => setPreferredDeliveryTime("12:00:00")}
+                    >
+                      <strong>12:00 PM – 8:00 PM</strong>
+                      <small>Afternoon & evening</small>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
