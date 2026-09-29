@@ -194,6 +194,7 @@ export default function StorePage() {
   const [deliveryUnit, setDeliveryUnit] = useState("");
   const [deliveryFloor, setDeliveryFloor] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
   const [preferredDeliveryDate, setPreferredDeliveryDate] = useState("");
   const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
   const [deliveryLocation, setDeliveryLocation] = useState<DeliveryLocation | null>(null);
@@ -202,6 +203,43 @@ export default function StorePage() {
   const [placing, setPlacing] = useState(false);
 
   const [supabase] = useState(createSupabaseBrowserClient);
+
+  useEffect(() => {
+    if (!deliveryLocation) {
+      setAddressLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setAddressLoading(true);
+
+    async function fillAddress() {
+      try {
+        const params = new URLSearchParams({
+          format: "jsonv2",
+          lat: String(deliveryLocation.latitude),
+          lon: String(deliveryLocation.longitude),
+          addressdetails: "1",
+        });
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`, {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Address lookup failed.");
+        const data = await response.json() as { display_name?: string };
+        if (data.display_name) setDeliveryAddress(data.display_name);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setDeliveryAddress("");
+        }
+      } finally {
+        if (!controller.signal.aborted) setAddressLoading(false);
+      }
+    }
+
+    void fillAddress();
+    return () => controller.abort();
+  }, [deliveryLocation]);
 
   useEffect(() => {
     let active = true;
@@ -528,7 +566,7 @@ export default function StorePage() {
           <div className="gq-product-grid">
             {visible.map((product, index) => (
               <article
-                className={`gq-product gq-product-${index % 4}`}
+                className={`gq-product gq-product-${index % 4} ${product.image_url ? "has-image" : "no-image"}`}
                 key={product.id}
               >
                 <div className="gq-product-image">
@@ -540,15 +578,8 @@ export default function StorePage() {
                     />
                   ) : (
                     <div className="gq-product-placeholder">
-                      <Package
-                        size={25}
-                        strokeWidth={1}
-                      />
-                      <span>
-                        GIFT
-                        <br />
-                        DETAIL
-                      </span>
+                      <Package size={22} strokeWidth={1} />
+                      <span>No image available</span>
                     </div>
                   )}
 
@@ -845,33 +876,15 @@ export default function StorePage() {
                 {deliveryLocation ? "Move delivery pin" : "Drop a pin"}
               </button>
 
-              {deliveryLocation && (
-                <div className="gq-pin-confirmed">
-                  <MapPin size={15} strokeWidth={1.5} />
-                  <span>Pin saved at {deliveryLocation.latitude.toFixed(5)}, {deliveryLocation.longitude.toFixed(5)}</span>
-                </div>
-              )}
-
-              <label>
-                Delivery address
-                <textarea required value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Street, area, building or villa address" rows={3} />
-              </label>
-
-              <div className="gq-delivery-grid">
-                <label>Building / Villa<input value={deliveryBuilding} onChange={(event) => setDeliveryBuilding(event.target.value)} placeholder="Building or villa" /></label>
-                <label>Apartment / Office<input value={deliveryUnit} onChange={(event) => setDeliveryUnit(event.target.value)} placeholder="Unit" /></label>
-                <label>Floor<input value={deliveryFloor} onChange={(event) => setDeliveryFloor(event.target.value)} placeholder="Floor" /></label>
-              </div>
-
               <label>
                 Delivery instructions
-                <textarea value={deliveryInstructions} onChange={(event) => setDeliveryInstructions(event.target.value)} placeholder="Gate, reception, landmark, preferred entrance…" rows={2} />
+                <textarea
+                  value={deliveryInstructions}
+                  onChange={(event) => setDeliveryInstructions(event.target.value)}
+                  placeholder="Gate, reception, landmark, or any delivery instructions…"
+                  rows={3}
+                />
               </label>
-
-              <div className="gq-delivery-grid">
-                <label>Preferred date<input type="date" value={preferredDeliveryDate} onChange={(event) => setPreferredDeliveryDate(event.target.value)} /></label>
-                <label>Preferred time<input type="time" value={preferredDeliveryTime} onChange={(event) => setPreferredDeliveryTime(event.target.value)} /></label>
-              </div>
             </div>
 
             <button
