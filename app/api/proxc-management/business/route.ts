@@ -6,6 +6,7 @@ import { proxcRequest } from "@/lib/proxc/client";
 const text = z.string().max(2000);
 const name = z.string().min(1).max(140);
 const kind = z.enum(["employees", "customers", "suppliers", "accounts", "bank_accounts", "banks", "holiday_lists", "holiday_assignments", "departments", "designations", "purchase_invoices", "payments", "journals", "salary_components", "salary_structures", "salary_assignments", "salary_slips", "payroll_runs"]);
+const courierProvider = z.enum(["aramex"]);
 const printKind = z.enum(["invoice", "order", "delivery", "salary_slip", "purchase_invoice"]);
 const current = { name, expected_modified: z.string().min(1).max(100) };
 const mutations = z.discriminatedUnion("action", [
@@ -19,6 +20,9 @@ const mutations = z.discriminatedUnion("action", [
   z.object({ action: z.literal("save_profile"), data: z.object({ display_name: text, address: text, email: z.union([z.literal(""), z.string().email()]), phone_no: text, website: text, tax_id: text }).strict(), expected_modified: text }).strict(),
   z.object({ action: z.literal("upload_logo"), content: z.string().max(4000000) }).strict(),
   z.object({ action: z.literal("email_document"), kind: printKind, name, recipient: z.string().email(), subject: z.string().min(1).max(200), message: z.string().max(10000), request_id: z.string().uuid() }).strict(),
+  z.object({ action: z.literal("save_courier_connection"), provider: courierProvider, username: z.string().min(1).max(300), password: z.string().max(300), account_number: z.string().min(1).max(100), account_pin: z.string().max(100), account_entity: z.string().min(1).max(3), country_code: z.string().length(2) }).strict(),
+  z.object({ action: z.literal("test_courier_connection"), provider: courierProvider }).strict(),
+  z.object({ action: z.literal("disconnect_courier_connection"), provider: courierProvider }).strict(),
 ]);
 const reads = z.discriminatedUnion("action", [
   z.object({ action: z.literal("capabilities") }).strict(),
@@ -27,6 +31,7 @@ const reads = z.discriminatedUnion("action", [
   z.object({ action: z.literal("choices"), kind, field: name, table: name.optional(), search: z.string().max(80).default("") }).strict(),
   z.object({ action: z.literal("bank_balances"), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).strict(),
   z.object({ action: z.literal("invoice_choices"), direction: z.enum(["Receive", "Pay"]), search: z.string().max(80).default("") }).strict(),
+  z.object({ action: z.literal("courier_connections") }).strict(),
   z.object({ action: z.literal("document_pdf"), kind: printKind, name }).strict(),
 ]);
 
