@@ -33,7 +33,7 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
     return data;
   }, [supabase]);
   const load = useCallback(async () => { setError(""); try { setCaps(await api<Capabilities>({ action: "capabilities" })); } catch (e) { setError(e instanceof Error ? e.message : "Setup unavailable."); } }, [api]);
-  useEffect(() => { let active = true; void supabase.auth.getSession().then(({ data }) => { if (active) setOwner(data.session?.user.app_metadata?.role === "owner"); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setOwner(session?.user.app_metadata?.role === "owner"); setCaps(null); }); return () => { active = false; subscription.unsubscribe(); }; }, [supabase]);
+  useEffect(() => { let active = true; void supabase.auth.getSession().then(({ data }) => { if (active) setOwner(data.session?.user.app_metadata?.role === "owner"); }); const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setOwner(session?.user.app_metadata?.role === "owner"); }); return () => { active = false; subscription.unsubscribe(); }; }, [supabase]);
   useEffect(() => { if (owner) { const timer = setTimeout(() => void load(), 0); return () => clearTimeout(timer); } }, [owner, load]);
   const tabs = owner
     ? ["Operations", "Invoice files", "Accounting", "Cash & Banks", "Credit & Bills", "Delivery & Shipping", "Staff", "Payroll", "Company & Documents"]
