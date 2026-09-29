@@ -62,25 +62,61 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
     "Payroll": "▣",
     "Company & Documents": "▧",
   };
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const navigation = (
+    <nav className="space-y-1" aria-label="Management sections">
+      {tabs.map(item => (
+        <button key={item} type="button" aria-current={tab === item ? "page" : undefined}
+          onClick={() => { setTab(item); setMobileNavOpen(false); }}
+          className={tab === item ? "flex w-full items-center gap-3 rounded-xl bg-[#725839] px-3 py-3 text-left text-sm font-medium text-white shadow-sm" : "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-[#655d56] hover:bg-[#f7f3ed] hover:text-[#403a35]"}>
+          <span className={tab === item ? "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 text-sm" : "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f7f3ed] text-sm text-[#8b7a67]"} aria-hidden="true">{icons[item]}</span>
+          <span>{item}</span>
+        </button>
+      ))}
+    </nav>
+  );
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col gap-5 lg:flex-row lg:items-start">
-      <aside className="w-full shrink-0 lg:sticky lg:top-5 lg:w-60" aria-label="Management navigation">
+      <div className="flex items-center justify-between rounded-2xl border border-[#e5dfd8] bg-white p-3 shadow-[0_8px_30px_rgba(70,55,40,0.05)] lg:hidden">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b7a67]">Giftique</p>
+          <p className="text-sm font-semibold text-[#403a35]">Owner workspace</p>
+        </div>
+        <button type="button" aria-label="Open workspace menu" aria-expanded={mobileNavOpen}
+          onClick={() => setMobileNavOpen(true)}
+          className="flex items-center gap-2 rounded-xl border border-[#ded5ca] bg-white px-3 py-2.5 text-sm font-semibold text-[#403a35] shadow-sm">
+          <span className="text-xl leading-none" aria-hidden="true">☰</span>
+          <span>Menu</span>
+        </button>
+      </div>
+
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Giftique workspace menu">
+          <button type="button" className="absolute inset-0 bg-black/30" aria-label="Close workspace menu" onClick={() => setMobileNavOpen(false)} />
+          <aside className="absolute right-0 top-0 h-full w-[min(88vw,360px)] overflow-y-auto bg-white p-4 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between border-b border-[#eee8e0] pb-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b7a67]">Giftique</p>
+                <h2 className="mt-1 text-lg font-semibold text-[#403a35]">Workspace menu</h2>
+              </div>
+              <button type="button" aria-label="Close workspace menu" onClick={() => setMobileNavOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-xl border border-[#ded5ca] text-lg text-[#403a35]">×</button>
+            </div>
+            {navigation}
+          </aside>
+        </div>
+      )}
+
+      <aside className="hidden w-full shrink-0 lg:sticky lg:top-5 lg:block lg:w-60" aria-label="Management navigation">
         <div className="overflow-hidden rounded-2xl border border-[#e5dfd8] bg-white shadow-[0_8px_30px_rgba(70,55,40,0.05)]">
           <div className="border-b border-[#eee8e0] px-5 py-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8b7a67]">Giftique</p>
             <h1 className="mt-1 text-lg font-semibold tracking-tight text-[#403a35]">Management</h1>
             {owner && <p className="mt-1 text-xs text-[#8b837c]">Owner workspace</p>}
           </div>
-          <nav className="flex gap-1 overflow-x-auto p-2 lg:block lg:overflow-visible" aria-label="Management sections">
-            {tabs.map(item => (
-              <button key={item} type="button" aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)}
-                className={tab === item ? "flex min-w-max w-full items-center gap-3 rounded-xl bg-[#725839] px-3 py-2.5 text-left text-sm font-medium text-white shadow-sm" : "flex min-w-max w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#655d56] hover:bg-[#f7f3ed] hover:text-[#403a35]"}>
-                <span className={tab === item ? "grid h-7 w-7 place-items-center rounded-lg bg-white/15 text-sm" : "grid h-7 w-7 place-items-center rounded-lg bg-[#f7f3ed] text-sm text-[#8b7a67]"} aria-hidden="true">{icons[item]}</span>
-                <span>{item}</span>
-              </button>
-            ))}
-          </nav>
+          {navigation}
         </div>
       </aside>
 
@@ -205,3 +241,6 @@ function Documents({ api, caps, onChanged, supabase }: { api: Api; caps: Capabil
     {error && <p role="alert" className="mt-4 text-red-800">{error}</p>}{notice && <p role="status" className="mt-4 text-green-900">{notice}</p>}
   </>;
 }
+
+
+
