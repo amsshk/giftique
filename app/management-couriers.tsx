@@ -12,11 +12,50 @@ type Courier = {
   provider: string;
   label: string;
   connected: boolean;
+  configured?: boolean;
   account_number?: string;
   account_entity?: string;
   account_country_code?: string;
   last_tested?: string;
 };
+
+type ConnectionResponse = Courier[] | {
+  aramex?: {
+    connected?: boolean;
+    configured?: boolean;
+    last_tested?: string | null;
+    account_number?: string;
+    account_entity?: string;
+    country_code?: string;
+  };
+};
+
+const providers = [
+  {
+    id: "aramex",
+    name: "Aramex",
+    description: "Rates, shipment creation, labels, pickup requests and tracking.",
+    status: "available",
+  },
+  {
+    id: "dhl",
+    name: "DHL Express",
+    description: "Rates, shipment creation, labels, pickup requests and tracking through MyDHL.",
+    status: "next",
+  },
+  {
+    id: "emirates_post",
+    name: "Emirates Post",
+    description: "Booking, pricing, labels, tracking and delivery instructions.",
+    status: "next",
+  },
+  {
+    id: "shipa",
+    name: "Shipa Delivery",
+    description: "Delivery orders, AWBs, tracking and local delivery services.",
+    status: "next",
+  },
+] as const;
 
 export default function CourierIntegrations({ api }: { api: Api }) {
   const [couriers, setCouriers] = useState<Courier[]>([]);
@@ -34,9 +73,25 @@ export default function CourierIntegrations({ api }: { api: Api }) {
   async function load() {
     setError("");
     try {
-      setCouriers(await api<Courier[]>({ action: "courier_connections" }));
+      const result = await api<ConnectionResponse>({ action: "courier_connections" });
+      if (Array.isArray(result)) {
+        setCouriers(result);
+      } else if (result.aramex) {
+        setCouriers([{
+          provider: "aramex",
+          label: "Aramex",
+          connected: Boolean(result.aramex.connected),
+          configured: Boolean(result.aramex.configured),
+          account_number: result.aramex.account_number,
+          account_entity: result.aramex.account_entity,
+          account_country_code: result.aramex.country_code,
+          last_tested: result.aramex.last_tested || undefined,
+        }]);
+      } else {
+        setCouriers([]);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Courier connections unavailable.");
+      setError(e instanceof Error ? e.message : "Delivery company connections are unavailable.");
     }
   }
 
@@ -46,9 +101,12 @@ export default function CourierIntegrations({ api }: { api: Api }) {
   }, []);
 
   const current = couriers.find(c => c.provider === provider);
+  const selected = providers.find(p => p.id === provider) ?? providers[0];
+  const activeProvider = selected.status === "available";
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (!activeProvider) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -114,41 +172,74 @@ export default function CourierIntegrations({ api }: { api: Api }) {
     <div>
       <h3 className="font-semibold">Delivery companies</h3>
       <p className="mt-2 text-sm leading-6 text-[#716b66]">
-        Connect the business's own courier account. Credentials are kept on the business server and are never shown to customers.
+        Connect the business's own courier accounts. Credentials are kept securely on the business server and are never shown to customers.
       </p>
+    </div>
+
+    <div className="grid gap-3 md:grid-cols-2">
+      {providers.map(item => {
+        const connection = couriers.find(c => c.provider === item.id);
+        const isSelected = item.id === provider;
+        return <button
+          key={item.id}
+          type="button"
+          onClick={() => { setProvider(item.id); setError(""); setNotice(""); }}
+          className={`rounded-xl border p-4 text-left transition ${isSelected ? "border-[#725839] bg-[#fbf9f6]" : "border-[#e5dfd8] bg-white hover:bg-[#fbf9f6]"}`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">{item.name}</p>
+              <p className="mt-1 text-xs leading-5 text-[#716b66]">{item.description}</p>
+            </div>
+            <span className={connection?.connected ? "rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-800" : item.status === "available" ? "rounded-full bg-[#f0ece6] px-2.5 py-1 text-[11px] font-medium text-[#716b66]" : "rounded-full bg-[#f0ece6] px-2.5 py-1 text-[11px] font-medium text-[#716b66]"}>
+              {connection?.connected ? "Connected" : item.status === "available" ? "Setup" : "Coming next"}
+            </span>
+          </div>
+        </button>;
+      })}
     </div>
 
     <div className="rounded-xl border border-[#e5dfd8] bg-[#fbf9f6] p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold">Aramex</p>
-          <p className="text-xs text-[#716b66]">Rates, shipment creation, labels, pickup requests and tracking.</p>
+          <p className="text-sm font-semibold">{selected.name}</p>
+          <p className="text-xs text-[#716b66]">{selected.description}</p>
         </div>
-        <span className={current?.connected ? "rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800" : "rounded-full bg-[#f0ece6] px-3 py-1 text-xs font-medium text-[#716b66]"}>
-          {current?.connected ? "Connected" : "Not connected"}
-        </span>
+        {current?.connected && <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800">Connected</span>}
       </div>
 
-      <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm">Aramex username<input className={input} autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} required /></label>
-        <label className="text-sm">Aramex password<input className={input} type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder={current?.connected ? "Enter only to replace saved password" : ""} required={!current?.connected} /></label>
+      {!activeProvider ? <div className="mt-5 rounded-lg border border-dashed border-[#ded5ca] bg-white p-4">
+        <p className="text-sm font-medium">Account connection is being prepared</p>
+        <p className="mt-1 text-sm leading-6 text-[#716b66]">
+          Giftique is keeping the same courier connection structure for every provider. This provider will use its own business account credentials and pricing agreement when enabled.
+        </p>
+      </div> : <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
+        <label className="text-sm">{selected.name} username<input className={input} autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} required /></label>
+        <label className="text-sm">{selected.name} password<input className={input} type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder={current?.connected ? "Enter only to replace saved password" : ""} required={!current?.connected} /></label>
         <label className="text-sm">Account number<input className={input} value={accountNumber} onChange={e => setAccountNumber(e.target.value)} required /></label>
         <label className="text-sm">Account PIN<input className={input} type="password" autoComplete="off" value={accountPin} onChange={e => setAccountPin(e.target.value)} placeholder={current?.connected ? "Enter only to replace saved PIN" : ""} required={!current?.connected} /></label>
         <label className="text-sm">Account entity<input className={input} value={accountEntity} onChange={e => setAccountEntity(e.target.value)} maxLength={3} required /></label>
         <label className="text-sm">Account country code<input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value.toUpperCase())} maxLength={2} required /></label>
         <div className="flex flex-wrap gap-2 sm:col-span-2">
-          <button className={primary} disabled={busy}>{busy ? "Saving…" : current?.connected ? "Update Aramex account" : "Connect Aramex"}</button>
+          <button className={primary} disabled={busy}>{busy ? "Saving…" : current?.connected ? `Update ${selected.name} account` : `Connect ${selected.name}`}</button>
           {current?.connected && <button type="button" className={button} disabled={busy} onClick={() => void test()}>Test connection</button>}
           {current?.connected && <button type="button" className={button} disabled={busy} onClick={() => void disconnect()}>Disconnect</button>}
         </div>
-      </form>
+      </form>}
 
       {current?.last_tested && <p className="mt-3 text-xs text-[#716b66]">Last connection test: {current.last_tested}</p>}
     </div>
 
-    <div className="rounded-xl border border-dashed border-[#ded5ca] p-4">
-      <p className="text-sm font-semibold">More delivery companies</p>
-      <p className="mt-1 text-sm text-[#716b66]">The same connection layer can be used for DHL and other couriers without changing the customer checkout.</p>
+    <div className="rounded-xl border border-[#e5dfd8] bg-white p-4">
+      <p className="text-sm font-semibold">Delivery costs</p>
+      <p className="mt-1 text-sm leading-6 text-[#716b66]">
+        Courier costs will be stored separately from the delivery amount charged to the customer. Giftique will use the courier's live rate or contracted business rate when available, then record the courier cost and delivery margin against the order.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg bg-[#fbf9f6] p-3"><p className="text-xs text-[#716b66]">Customer delivery fee</p><p className="mt-1 text-sm font-semibold">Revenue</p></div>
+        <div className="rounded-lg bg-[#fbf9f6] p-3"><p className="text-xs text-[#716b66]">Courier charge</p><p className="mt-1 text-sm font-semibold">Delivery cost</p></div>
+        <div className="rounded-lg bg-[#fbf9f6] p-3"><p className="text-xs text-[#716b66]">Difference</p><p className="mt-1 text-sm font-semibold">Delivery margin</p></div>
+      </div>
     </div>
 
     {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}

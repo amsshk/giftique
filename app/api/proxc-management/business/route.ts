@@ -5,7 +5,7 @@ import { proxcRequest } from "@/lib/proxc/client";
 
 const text = z.string().max(2000);
 const name = z.string().min(1).max(140);
-const kind = z.enum(["employees", "customers", "suppliers", "accounts", "bank_accounts", "banks", "holiday_lists", "holiday_assignments", "departments", "designations", "purchase_invoices", "payments", "journals", "salary_components", "salary_structures", "salary_assignments", "salary_slips", "payroll_runs"]);
+const kind = z.enum(["employees", "customers", "suppliers", "accounts", "bank_accounts", "banks", "holiday_lists", "holiday_assignments", "departments", "designations", "purchase_invoices", "payments", "journals", "salary_components", "salary_structures", "salary_assignments", "salary_slips", "payroll_runs", "deliveries", "shipments"]);
 const courierProvider = z.enum(["aramex"]);
 const printKind = z.enum(["invoice", "order", "delivery", "salary_slip", "purchase_invoice"]);
 const current = { name, expected_modified: z.string().min(1).max(100) };
