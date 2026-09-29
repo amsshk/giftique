@@ -566,7 +566,7 @@ export default function StorePage() {
           <div className="gq-product-grid">
             {visible.map((product, index) => (
               <article
-                className={`gq-product gq-product-${index % 4}`}
+                className={`gq-product gq-product-${index % 4} ${product.image_url ? "has-image" : "no-image"}`}
                 key={product.id}
               >
                 <div className="gq-product-image">
