@@ -993,6 +993,19 @@
   min-width: 0;
 }
 
+.gq-product.no-image .gq-product-image {
+  display: none;
+}
+
+.gq-product.no-image .gq-product-info {
+  padding-top: 10px;
+  padding-bottom: 12px;
+}
+
+.gq-product.no-image .gq-product-number {
+  display: none;
+}
+
 .gq-product-0 {
   grid-column: span 2;
   grid-row: span 2;
