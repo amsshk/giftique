@@ -876,41 +876,15 @@ export default function StorePage() {
                 {deliveryLocation ? "Move delivery pin" : "Drop a pin"}
               </button>
 
-              {deliveryLocation && (
-                <div className="gq-pin-confirmed">
-                  <MapPin size={15} strokeWidth={1.5} />
-                  <span>{addressLoading ? "Finding your delivery address…" : deliveryAddress || "Delivery location selected"}</span>
-                </div>
-              )}
-
-              <div className="gq-delivery-schedule">
-                <label>
-                  Delivery date
-                  <input required type="date" value={preferredDeliveryDate} onChange={(event) => setPreferredDeliveryDate(event.target.value)} />
-                </label>
-
-                <div className="gq-delivery-window">
-                  <span>Delivery window</span>
-                  <div className="gq-delivery-window-options">
-                    <button
-                      type="button"
-                      className={preferredDeliveryTime === "08:00:00" ? "is-selected" : ""}
-                      onClick={() => setPreferredDeliveryTime("08:00:00")}
-                    >
-                      <strong>8:00 AM – 12:00 PM</strong>
-                      <small>Morning delivery</small>
-                    </button>
-                    <button
-                      type="button"
-                      className={preferredDeliveryTime === "12:00:00" ? "is-selected" : ""}
-                      onClick={() => setPreferredDeliveryTime("12:00:00")}
-                    >
-                      <strong>12:00 PM – 8:00 PM</strong>
-                      <small>Afternoon & evening</small>
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <label>
+                Delivery instructions
+                <textarea
+                  value={deliveryInstructions}
+                  onChange={(event) => setDeliveryInstructions(event.target.value)}
+                  placeholder="Gate, reception, landmark, or any delivery instructions…"
+                  rows={3}
+                />
+              </label>
             </div>
 
             <button
