@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import InvoiceFiles from "./management-invoice-files";
+import CourierIntegrations from "./management-couriers";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { accountingReports, type AccountingReport, type AccountingReportId } from "@/lib/management-catalog";
 import type { BusinessForm, BusinessRecord, Capabilities, Field, Values } from "@/lib/business-types";
@@ -83,7 +84,7 @@ export default function ManagementWorkspace({ children }: { children: ReactNode 
               {tab === "Accounting" && <><Reports supabase={supabase}/><RecordArea api={api} caps={caps} kinds={["journals", "accounts"]}/></>}
               {tab === "Cash & Banks" && <><Payments api={api}/><RecordArea api={api} caps={caps} kinds={["payments", "bank_accounts", "banks"]}/></>}
               {tab === "Credit & Bills" && <><p className="mb-4 text-sm">Track supplier bills and customer credit notes. Receivables and payables ageing are available in Accounting.</p><CreditNote api={api}/><RecordArea api={api} caps={caps} kinds={["purchase_invoices", "suppliers", "customers"]}/></>}
-              {tab === "Delivery & Shipping" && <><p className="mb-4 text-sm leading-6">Create and manage delivery notes and shipments, including delivery addresses, drivers, vehicles, tracking details, parcel information, and shipment status.</p><RecordArea api={api} caps={caps} kinds={["deliveries", "shipments"]}/></>}
+              {tab === "Delivery & Shipping" && <><CourierIntegrations api={api}/><div className="my-7 border-t border-[#e5dfd8] pt-6"><p className="mb-4 text-sm leading-6">Create and manage delivery notes and shipments, including delivery addresses, drivers, vehicles, tracking details, parcel information, and shipment status.</p><RecordArea api={api} caps={caps} kinds={["deliveries", "shipments"]}/></div></>}
               {tab === "Staff" && <><p className="mb-4 text-sm">Employee records are private to the owner. Adding an employee does not create a website login.</p><RecordArea api={api} caps={caps} kinds={["employees", "departments", "designations", "holiday_lists", "holiday_assignments"]}/></>}
               {tab === "Payroll" && (caps.payroll ? <><p className="mb-4 text-sm leading-6">Set up employees, holiday lists, and submitted holiday assignments in Staff. Create salary components and structures, then assign a structure to each employee. Save a payroll run, submit it to create draft salary slips, review those slips, and submit payroll to post the accrual. Salary bank transfers are performed separately.</p><RecordArea api={api} caps={caps} kinds={["payroll_runs", "salary_slips", "salary_assignments", "salary_structures", "salary_components"]}/></> : <p role="alert">Payroll requires the HRMS installation to be completed.</p>)}
               {tab === "Company & Documents" && <Documents api={api} caps={caps} onChanged={load} supabase={supabase}/>}
