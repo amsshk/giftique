@@ -197,8 +197,7 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
       </div>
     </nav>
 
-    <div className="min-w-0">
-      <div className="mb-5">
+    <div className="mb-5">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#9a8a79]">Business control centre</p>
         <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#403a35]">Today at Giftique</h2>
         <p className="mt-1 text-sm text-[#716b66]">Live orders, invoices, customers, stock and deliveries.</p>
@@ -232,7 +231,6 @@ export default function ManagementOperations({ onChanged, renderOverview }: {
       {area === "invoices" && selectedInvoice && !detailLoading && <div className="mt-7 rounded-xl bg-[#f7f5f2] p-5"><h3 className="text-lg font-semibold">Invoice {selectedInvoice.name}</h3><p className="mt-1 text-sm text-[#716b66]">{selectedInvoice.customer_name} · {selectedInvoice.status} · Due {selectedInvoice.due_date || "not set"}</p><div className="mt-4 divide-y divide-[#e5dfd8]">{selectedInvoice.items.map((item, index) => <div key={`${item.item_code}-${index}`} className="flex justify-between gap-3 py-2 text-sm"><span>{item.item_name || item.item_code} · {item.qty} × {money(item.rate)}</span><strong>{money(item.amount)}</strong></div>)}</div><p className="mt-3 text-right font-semibold">Total {money(selectedInvoice.grand_total)}</p>{selectedInvoice.docstatus === 0 && <button type="button" onClick={() => setConfirmation({ action: "submit_invoice", name: selectedInvoice.name, modified: selectedInvoice.modified })} disabled={busy} className="mt-5 rounded-lg bg-[#201b18] px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Submit invoice</button>}</div>}
       {confirmation && <div className="mt-5 rounded-xl border border-[#c4a167] bg-[#fffaf1] p-4 text-sm"><p className="font-medium">{confirmation.action === "submit_invoice" ? "Submit this invoice to ERPNext accounting?" : confirmation.action === "submit_order" ? "Submit this sales order in ERPNext?" : "Create a draft invoice from this order?"}</p><p className="mt-1 text-[#716b66]">Check the customer, items, and totals before continuing.</p><div className="mt-3 flex gap-3"><button type="button" onClick={() => void performAction()} disabled={busy} className="rounded-lg bg-[#201b18] px-4 py-2 font-medium text-white disabled:opacity-50">{busy ? "Working…" : "Confirm"}</button><button type="button" onClick={() => setConfirmation(null)} disabled={busy} className="rounded-lg border border-[#e5dfd8] px-4 py-2 disabled:opacity-50">Cancel</button></div></div>}
       </section>}
-    </div>
   </div>;
 }
 
