@@ -578,15 +578,8 @@ export default function StorePage() {
                     />
                   ) : (
                     <div className="gq-product-placeholder">
-                      <Package
-                        size={25}
-                        strokeWidth={1}
-                      />
-                      <span>
-                        GIFT
-                        <br />
-                        DETAIL
-                      </span>
+                      <Package size={22} strokeWidth={1} />
+                      <span>No image available</span>
                     </div>
                   )}
 
