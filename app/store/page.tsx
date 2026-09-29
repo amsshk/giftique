@@ -194,6 +194,7 @@ export default function StorePage() {
   const [deliveryUnit, setDeliveryUnit] = useState("");
   const [deliveryFloor, setDeliveryFloor] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [addressLoading, setAddressLoading] = useState(false);
   const [preferredDeliveryDate, setPreferredDeliveryDate] = useState("");
   const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
   const [deliveryLocation, setDeliveryLocation] = useState<DeliveryLocation | null>(null);
@@ -202,6 +203,43 @@ export default function StorePage() {
   const [placing, setPlacing] = useState(false);
 
   const [supabase] = useState(createSupabaseBrowserClient);
+
+  useEffect(() => {
+    if (!deliveryLocation) {
+      setAddressLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setAddressLoading(true);
+
+    async function fillAddress() {
+      try {
+        const params = new URLSearchParams({
+          format: "jsonv2",
+          lat: String(deliveryLocation.latitude),
+          lon: String(deliveryLocation.longitude),
+          addressdetails: "1",
+        });
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`, {
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Address lookup failed.");
+        const data = await response.json() as { display_name?: string };
+        if (data.display_name) setDeliveryAddress(data.display_name);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setDeliveryAddress("");
+        }
+      } finally {
+        if (!controller.signal.aborted) setAddressLoading(false);
+      }
+    }
+
+    void fillAddress();
+    return () => controller.abort();
+  }, [deliveryLocation]);
 
   useEffect(() => {
     let active = true;
@@ -854,7 +892,19 @@ export default function StorePage() {
 
               <label>
                 Delivery address
-                <textarea required value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Street, area, building or villa address" rows={3} />
+                <textarea
+                  required
+                  readOnly={!!deliveryLocation}
+                  value={deliveryAddress}
+                  onChange={(event) => setDeliveryAddress(event.target.value)}
+                  placeholder={deliveryLocation ? "Finding the address…" : "Drop a pin to fill this automatically"}
+                  rows={3}
+                />
+                {deliveryLocation && (
+                  <span className="gq-address-status">
+                    {addressLoading ? "Finding the address from your pin…" : "Address filled from your delivery pin"}
+                  </span>
+                )}
               </label>
 
               <div className="gq-delivery-grid">
